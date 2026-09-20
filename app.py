@@ -2,6 +2,7 @@ import streamlit as st
 from google import genai
 from google.genai import types
 import io
+import docx
 
 # 1. Konfigurasi Halaman Dashboard Responsif
 st.set_page_config(
@@ -247,13 +248,33 @@ with st.sidebar:
 SYSTEM_INSTRUCTION = """
 Anda adalah "SEKOLAHKITA AI", asisten komprehensif tata kelola sekolah, perancangan beban mengajar guru (JTM), kurikulum instruksional (SD, SMP, SMA/SMK), tata naskah dinas, dan perancang tata letak visual untuk Canva.
 Kemampuan Multi-Format Dokumen & Gambar:
-- Jika pengguna mengunggah teks dokumen (PDF, DOCX, TXT), baca dan tindaklanjuti isinya sesuai permintaan guru.
-- Jika pengguna mengunggah gambar (JPG, JPEG, PNG, WEBP) berisi naskah dinas, lembar modul ajar, foto papan tulis, atau lembar tugas siswa, lakukan Optical Character Recognition (OCR) dan tindaklanjuti secara kontekstual.
+- Jika pengguna mengunggah berkas teks dokumen (PDF, DOCX, TXT), baca dan tindaklanjuti isinya sesuai permintaan.
+- Jika pengguna mengunggah gambar (JPG, JPEG, PNG, WEBP), lakukan Optical Character Recognition (OCR) dan analisis secara kontekstual.
 - Khusus untuk peran Guru Kelas (SD): kuasai pendekatan tematik, fase fondasi A-C Kurikulum Merdeka, literasi-numerasi dini, serta lembar aktivitas peserta didik (LKPD) ramah anak.
 - Jika dokumen berkaitan dengan infografik, poster, LKPD, atau slide presentasi: sertakan konsep tata letak terstruktur, kode skema warna hex, dan panduan transfer ke Canva.
 Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidikan.
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
+
+# Fungsi Pembuat Berkas Word (.docx)
+def create_docx_bytes(markdown_text):
+    doc = docx.Document()
+    doc.add_heading("Draf Hasil Rancangan - SEKOLAHKITA AI", level=1)
+    for line in markdown_text.split("\n"):
+        clean_line = line.strip()
+        if clean_line.startswith("### "):
+            doc.add_heading(clean_line.replace("### ", ""), level=3)
+        elif clean_line.startswith("## "):
+            doc.add_heading(clean_line.replace("## ", ""), level=2)
+        elif clean_line.startswith("# "):
+            doc.add_heading(clean_line.replace("# ", ""), level=1)
+        elif clean_line.startswith("- ") or clean_line.startswith("* "):
+            doc.add_paragraph(clean_line[2:], style='List Bullet')
+        elif clean_line:
+            doc.add_paragraph(clean_line)
+    output = io.BytesIO()
+    doc.save(output)
+    return output.getvalue()
 
 # 5. Tata Letak 3 Kolom Responsif
 col_left, col_center, col_right = st.columns([1, 2.2, 1], gap="small")
@@ -308,11 +329,10 @@ with col_center:
         details = st.text_area(
             "Detail Tambahan / Instruksi Tindak Lanjut:",
             value=st.session_state.selected_details,
-            placeholder="Ketik instruksi tindak lanjut (misal: 'analisis foto SK ini', 'buatkan LKPD berdasarkan foto buku ini', atau 'buatkan gambar visual')...",
+            placeholder="Ketik instruksi tindak lanjut (misal: 'analisis foto SK ini', 'buatkan LKPD berdasarkan materi ini', atau 'buatkan gambar visual')...",
             height=110
         )
         
-        # Fitur Unggah Pembaca Berkas Multi-Format (DOCX, PDF, TXT, JPG, PNG, WEBP)
         uploaded_file = st.file_uploader(
             "📎 Unggah Dokumen / Foto Berkas untuk Dibaca AI:",
             type=["docx", "pdf", "txt", "jpg", "jpeg", "png", "webp"],
@@ -350,7 +370,7 @@ st.write("")
 st.markdown('<div class="canvas-heading">🎨 STUDIO KREASI & VISUAL</div>', unsafe_allow_html=True)
 canvas_box = st.container(border=True)
 
-# Logika Pemrosesan Berkas Dokumen & Gambar
+# Logika Pemrosesan Berkas Dokumen & Model Gemini 3.6 Flash
 if btn_generate:
     if not api_key:
         st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
@@ -392,7 +412,6 @@ if btn_generate:
                 # Kasus 3: Berkas Word (.docx)
                 elif file_name.endswith('.docx'):
                     try:
-                        import docx
                         doc = docx.Document(io.BytesIO(file_bytes))
                         docx_text = "\n".join([p.text for p in doc.paragraphs if p.text])
                     except Exception:
@@ -411,9 +430,9 @@ if btn_generate:
                     st.session_state.uploaded_preview_doc = pdf_text[:2000]
                     contents_payload.append(f"\n--- ISI DOKUMEN PDF ({uploaded_file.name}) ---\n{pdf_text}")
 
-            # Alirkan hasil analisis dokumen & naskah secara streaming
+            # Menggunakan model stabil gemini-3.6-flash
             response_stream = client.models.generate_content_stream(
-                model="gemini-2.5-flash",
+                model="gemini-3.6-flash",
                 contents=contents_payload,
                 config={"system_instruction": SYSTEM_INSTRUCTION}
             )
@@ -426,7 +445,7 @@ if btn_generate:
                     stream_placeholder.markdown(full_text)
             st.session_state.generated_doc = full_text
 
-            # Jika ada instruksi khusus merender ilustrasi gambar nyata
+            # Pembuatan ilustrasi gambar jika diminta
             if need_real_image:
                 with st.spinner("Sedang merender ilustrasi visual..."):
                     img_response = client.models.generate_images(
@@ -445,7 +464,6 @@ if btn_generate:
 
 # Tampilan Hasil di Studio Kreasi & Visual
 with canvas_box:
-    # Tampilkan pratinjau sumber berkas
     if st.session_state.uploaded_preview_img:
         with st.expander("📷 **Lihat Foto/Dokumen Asli yang Dibaca AI**", expanded=False):
             st.image(st.session_state.uploaded_preview_img, caption="Dokumen Visual yang Diunggah", use_container_width=True)
@@ -454,20 +472,41 @@ with canvas_box:
         with st.expander("📄 **Lihat Kutipan Dokumen Teks/PDF/Word yang Dibaca AI**", expanded=False):
             st.text_area("Isi Teks Dokumen:", value=st.session_state.uploaded_preview_doc, height=120, disabled=True)
 
-    # Tampilkan ilustrasi gambar hasil Imagen jika ada
+    # Area Gambar Hasil Generasi & Tombol Unduh Gambar
     if st.session_state.generated_image:
         st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
         st.image(st.session_state.generated_image, use_container_width=True)
         st.download_button(
-            label="💾 Unduh Gambar Ilustrasi",
+            label="💾 Unduh Gambar Ilustrasi (PNG)",
             data=st.session_state.generated_image,
             file_name="sekolahkita_visual.png",
-            mime="image/png"
+            mime="image/png",
+            use_container_width=True
         )
         st.divider()
 
-    # Tampilkan tab hasil dokumen & naskah
+    # Area Dokumen Hasil Generasi & Tombol Unduh Dokumen
     if st.session_state.generated_doc:
+        st.markdown("##### 📥 Unduh Dokumen Hasil Kreasi:")
+        col_dl1, col_dl2 = st.columns(2)
+        with col_dl1:
+            docx_bytes = create_docx_bytes(st.session_state.generated_doc)
+            st.download_button(
+                label="📄 Unduh Dokumen Word (.docx)",
+                data=docx_bytes,
+                file_name="Rancangan_SekolahKita_AI.docx",
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True
+            )
+        with col_dl2:
+            st.download_button(
+                label="📝 Unduh Teks Dokumen (.txt)",
+                data=st.session_state.generated_doc,
+                file_name="Rancangan_SekolahKita_AI.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+
         tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
         
         with tab_view:
