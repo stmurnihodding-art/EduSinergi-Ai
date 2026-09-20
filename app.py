@@ -116,9 +116,13 @@ st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
 # 4. Panel Samping (Sidebar)
 with st.sidebar:
     st.header("⚙️ Pengaturan")
-    api_key = st.text_input("Masukkan Gemini API Key:", type="password")
-    st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/)")
-
+    secret_key = st.secrets.get("GEMINI_API_KEY", "")
+    if secret_key:
+        api_key = secret_key
+        st.success("✅ API Key terhubung otomatis")
+    else:
+        api_key = st.text_input("Masukkan Gemini API Key:", type="password")
+        st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/)")
 SYSTEM_INSTRUCTION = """
 Anda adalah "SekolahKita AI", asisten komprehensif tata kelola sekolah, perancangan instruksional, dan operasional tenaga kependidikan.
 Tugas Anda membantu menyusun dokumen manajerial, modul ajar, catatan rapor, tata tertib, naskah dinas, dan materi presentasi sesuai peran pengguna.
