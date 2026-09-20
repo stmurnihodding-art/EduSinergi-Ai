@@ -8,7 +8,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Styling CSS Neon Bar & Tata Letak Presisi Simetris
+# 2. Styling CSS Neon Bar & Layout Presisi Simetris
 custom_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&display=swap');
@@ -67,18 +67,36 @@ html, body, [class*="css"] {
     margin-bottom: 28px;
 }
 
-/* Mengunci Tinggi Bingkai Kiri dan Kanan Sama Presisi */
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 12px !important;
-    border: 1px solid rgba(0, 242, 254, 0.35) !important;
-    box-shadow: 0 0 16px rgba(0, 242, 254, 0.08) !important;
-    background-color: rgba(255, 255, 255, 0.02) !important;
-    min-height: 460px !important;
-    height: 460px !important;
-    overflow-y: auto !important;
+/* Kotak Kiri & Kanan Terkunci Presisi */
+.canvas-card {
+    height: 450px;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 242, 254, 0.35);
+    box-shadow: 0 0 16px rgba(0, 242, 254, 0.08);
+    background-color: rgba(255, 255, 255, 0.02);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Tombol Eksekusi Bergradasi Oranye-Biru */
+.canvas-content {
+    color: #c9d1d9;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.canvas-placeholder-text {
+    color: #8b949e;
+    font-style: italic;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+}
+
+/* Tombol Eksekusi Bergradasi Oranye */
 .stButton > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -88,7 +106,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
     transition: all 0.3s ease-in-out !important;
-    margin-top: 8px;
+    margin-top: 12px;
 }
 
 .stButton > button:hover {
@@ -128,12 +146,17 @@ Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidi
 Sajikan langsung format dokumen siap pakai tanpa basa-basi pembuka.
 """
 
+# Inisialisasi Riwayat Output di Session State
+if "generated_doc" not in st.session_state:
+    st.session_state.generated_doc = ""
+
 # 5. Dua Kolom Presisi Seimbang
 col_input, col_canvas = st.columns(2, gap="large")
 
 with col_input:
-    st.markdown("### 📋 Parameter Dokumen")
-    with st.container(border=True):
+    st.markdown("### 🎛️ Studio Rancangan")
+    with st.container():
+        st.markdown('<div class="canvas-card">', unsafe_allow_html=True)
         role = st.selectbox(
             "Pilih Peran Anda:",
             [
@@ -152,35 +175,46 @@ with col_input:
         details = st.text_area(
             "Detail Tambahan / Konteks:",
             placeholder="Kriteria siswa, topik materi, atau instruksi khusus...",
-            height=190
+            height=140
         )
-    
-    # Tombol diletakkan di bawah kotak agar kedua kotak tetap sejajar
-    btn_generate = st.button("🚀 Susun ke Canvas", use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
+
+if btn_generate:
+    if not api_key:
+        st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
+    elif not doc_type:
+        st.warning("Mohon sebutkan jenis dokumen yang ingin dibuat.")
+    else:
+        with st.spinner("Sedang meracik dokumen ke kanvas..."):
+            try:
+                client = genai.Client(api_key=api_key)
+                prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
+                response = client.models.generate_content(
+                    model="gemini-2.5-pro",
+                    contents=prompt_input,
+                    config={"system_instruction": SYSTEM_INSTRUCTION}
+                )
+                st.session_state.generated_doc = response.text
+            except Exception as e:
+                st.error(f"Terjadi kesalahan: {e}")
 
 with col_canvas:
-    st.markdown("### 📄 Lembar Kerja Dokumen (Canvas)")
-    with st.container(border=True):
-        canvas_placeholder = st.empty()
-        
-        if btn_generate:
-            if not api_key:
-                st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
-            elif not doc_type:
-                st.warning("Mohon sebutkan jenis dokumen yang ingin dibuat.")
-            else:
-                with st.spinner("Sedang menyusun dokumen ke lembar canvas..."):
-                    try:
-                        client = genai.Client(api_key=api_key)
-                        prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
-                        
-                        response = client.models.generate_content(
-                            model="gemini-2.5-pro",
-                            contents=prompt_input,
-                            config={"system_instruction": SYSTEM_INSTRUCTION}
-                        )
-                        canvas_placeholder.markdown(response.text)
-                    except Exception as e:
-                        st.error(f"Terjadi kesalahan: {e}")
-        else:
-            canvas_placeholder.caption("Hasil dokumen dinas atau draf kerja akan ditampilkan langsung di lembar canvas ini.")
+    st.markdown("### 📄 Kanvas Dokumen")
+    if st.session_state.generated_doc:
+        st.markdown(
+            f'<div class="canvas-card"><div class="canvas-content">{st.session_state.generated_doc}</div></div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            """
+            <div class="canvas-card">
+                <div class="canvas-placeholder-text">
+                    Draf dokumen dinas atau rancangan administrasi akan tampil langsung di kanvas ini.
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
