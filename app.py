@@ -4,7 +4,7 @@ from google.genai import types
 import io
 import docx
 from pptx import Presentation
-from pptx.util import Inches, Pt
+from pptx.util import Pt
 from fpdf import FPDF
 
 # 1. Konfigurasi Halaman Dashboard Responsif
@@ -15,7 +15,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Styling CSS Responsif
+# 2. Styling CSS Responsif & Grid Presisi
 custom_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Orbitron:wght@800;900&display=swap');
@@ -76,7 +76,7 @@ html, body, [class*="css"] {
     margin-bottom: 14px;
 }
 
-/* Tipografi Judul Studio & Kanvas */
+/* Tipografi Judul */
 .studio-heading {
     font-family: 'Syne', sans-serif;
     font-size: 1.15rem;
@@ -102,16 +102,16 @@ html, body, [class*="css"] {
 
 /* Kotak Border Kontainer */
 div[data-testid="stVerticalBlockBorderWrapper"] {
-    border-radius: 12px !important;
+    border-radius: 10px !important;
     border: 1px solid rgba(0, 242, 254, 0.35) !important;
     box-shadow: 0 0 14px rgba(0, 242, 254, 0.08) !important;
     background-color: rgba(255, 255, 255, 0.02) !important;
-    padding: 10px !important;
+    padding: 8px 10px !important;
 }
 
-/* Gambar Kartu */
+/* Gambar Kartu Mini Presisi */
 div[data-testid="stImage"] img {
-    height: 90px !important;
+    height: 68px !important;
     width: 100% !important;
     object-fit: cover !important;
     border-radius: 6px !important;
@@ -121,13 +121,16 @@ div[data-testid="stCaptionContainer"] {
     text-align: center !important;
     font-weight: 600 !important;
     color: #cbd5e1 !important;
-    font-size: 0.75rem !important;
+    font-size: 0.72rem !important;
     margin-top: 2px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 /* Tombol Kartu Neon */
 .btn-cyan > button {
-    font-size: 0.78rem !important;
+    font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
     background: rgba(0, 242, 254, 0.08) !important;
@@ -135,10 +138,11 @@ div[data-testid="stCaptionContainer"] {
     color: #00f2fe !important;
     box-shadow: 0 0 8px rgba(0, 242, 254, 0.3) !important;
     width: 100% !important;
+    padding: 3px 6px !important;
 }
 
 .btn-emerald > button {
-    font-size: 0.78rem !important;
+    font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
     background: rgba(16, 185, 129, 0.08) !important;
@@ -146,10 +150,11 @@ div[data-testid="stCaptionContainer"] {
     color: #10b981 !important;
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
     width: 100% !important;
+    padding: 3px 6px !important;
 }
 
 .btn-purple > button {
-    font-size: 0.78rem !important;
+    font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
     background: rgba(168, 85, 247, 0.08) !important;
@@ -157,10 +162,11 @@ div[data-testid="stCaptionContainer"] {
     color: #c084fc !important;
     box-shadow: 0 0 8px rgba(168, 85, 247, 0.3) !important;
     width: 100% !important;
+    padding: 3px 6px !important;
 }
 
 .btn-pink > button {
-    font-size: 0.78rem !important;
+    font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
     background: rgba(236, 72, 153, 0.08) !important;
@@ -168,6 +174,7 @@ div[data-testid="stCaptionContainer"] {
     color: #f472b6 !important;
     box-shadow: 0 0 8px rgba(236, 72, 153, 0.3) !important;
     width: 100% !important;
+    padding: 3px 6px !important;
 }
 
 /* Tombol Utama */
@@ -190,15 +197,11 @@ div[data-testid="stCaptionContainer"] {
         font-size: 1.5rem !important;
     }
     div[data-testid="stImage"] img {
-        height: 75px !important;
+        height: 65px !important;
     }
-    .main-btn > button, .side-btn > button {
-        min-height: 44px !important;
-        font-size: 0.85rem !important;
-    }
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        padding: 8px !important;
-        margin-bottom: 8px !important;
+    .main-btn > button, .btn-cyan > button, .btn-emerald > button, .btn-purple > button, .btn-pink > button {
+        min-height: 40px !important;
+        font-size: 0.8rem !important;
     }
 }
 </style>
@@ -259,7 +262,7 @@ Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidi
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
 
-# --- FUNGSI GENERATOR BERKAS DOWNLOAD ---
+# Generator Berkas
 def create_docx_bytes(markdown_text):
     doc = docx.Document()
     doc.add_heading("Draf Hasil Rancangan - SEKOLAHKITA AI", level=1)
@@ -288,7 +291,6 @@ def create_pdf_bytes(markdown_text):
     pdf.ln(5)
     for line in markdown_text.split("\n"):
         clean = line.strip()
-        # Bersihkan karakter non-latin untuk kompatibilitas standar PDF
         safe_line = clean.encode('latin-1', 'replace').decode('latin-1')
         if safe_line:
             pdf.multi_cell(0, 6, text=safe_line)
@@ -297,10 +299,8 @@ def create_pdf_bytes(markdown_text):
 
 def create_pptx_bytes(markdown_text):
     prs = Presentation()
-    slide_layout = prs.slide_layouts[1] # Bullet slide
+    slide_layout = prs.slide_layouts[1]
     lines = [l.strip() for l in markdown_text.split("\n") if l.strip()]
-    
-    # Buat slide per bab atau setiap 5 baris
     chunk_size = 5
     for i in range(0, len(lines), chunk_size):
         chunk = lines[i:i+chunk_size]
@@ -317,32 +317,10 @@ def create_pptx_bytes(markdown_text):
     prs.save(out)
     return out.getvalue()
 
-# 5. Tata Letak 3 Kolom Responsif
-col_left, col_center, col_right = st.columns([1, 2.2, 1], gap="small")
+# 5. Tata Letak 2 Kolom: Studio di Kiri (2.3) - 4 Kartu di Kanan (1.0)
+col_left, col_right = st.columns([2.3, 1.0], gap="medium")
 
-# --- SISI KIRI ---
-with col_left:
-    with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80", caption="Instruksional & Modul", use_container_width=True)
-        st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
-        if st.button("📘 Modul Ajar", key="btn_tpl_1", use_container_width=True):
-            st.session_state.selected_role = "Guru Kelas (SD)"
-            st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
-            st.session_state.selected_details = "Rancang modul ajar tematik/mapel lengkap: Fase/Kelas, Capaian Pembelajaran (CP), Tujuan Pembelajaran (TP), aktivitas berdiferensiasi, LKPD anak, dan konsep tata letak Canva."
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=80", caption="Asesmen & Rapor", use_container_width=True)
-        st.markdown('<div class="btn-emerald">', unsafe_allow_html=True)
-        if st.button("📝 Catatan Rapor", key="btn_tpl_2", use_container_width=True):
-            st.session_state.selected_role = "Wali Kelas"
-            st.session_state.selected_doc = "Catatan Rapor Siswa"
-            st.session_state.selected_details = "Kompilasi narasi catatan rapor yang konstruktif dan memotivasi untuk siswa (akademik tinggi, butuh bimbingan membaca/hitung, penguatan karakter Profil Pelajar Pancasila)."
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# --- SISI TENGAH: STUDIO RANCANGAN ---
+# --- SISI KIRI: STUDIO RANCANGAN ---
 roles_list = [
     "Guru Kelas (SD)",
     "Guru Mata Pelajaran (SMP/SMA/SMK)",
@@ -354,7 +332,7 @@ roles_list = [
 ]
 current_role_index = roles_list.index(st.session_state.selected_role) if st.session_state.selected_role in roles_list else 0
 
-with col_center:
+with col_left:
     with st.container(border=True):
         st.markdown('<div class="studio-heading">🎛️ STUDIO RANCANGAN</div>', unsafe_allow_html=True)
         role = st.selectbox(
@@ -371,7 +349,7 @@ with col_center:
             "Detail Tambahan / Instruksi Tindak Lanjut:",
             value=st.session_state.selected_details,
             placeholder="Ketik instruksi tindak lanjut (misal: 'buatkan materi slide PPT', 'analisis foto SK ini', atau 'buatkan gambar visual')...",
-            height=110
+            height=100
         )
         
         uploaded_file = st.file_uploader(
@@ -384,27 +362,55 @@ with col_center:
         btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SISI KANAN ---
+# --- SISI KANAN: 4 KARTU BERADA DI KANAN SEMUA (GRID 2x2 KOMPAK) ---
 with col_right:
-    with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1450133064473-71024230f91b?w=400&q=80", caption="Regulasi & SK Dinas", use_container_width=True)
-        st.markdown('<div class="btn-purple">', unsafe_allow_html=True)
-        if st.button("🏛️ Regulasi & SK", key="btn_tpl_3", use_container_width=True):
-            st.session_state.selected_role = "Kepala Sekolah"
-            st.session_state.selected_doc = "Surat Keputusan (SK) Beban Kerja Guru"
-            st.session_state.selected_details = "Draf naskah dinas resmi SK Kepala Sekolah tentang Pembagian Tugas Guru Kelas/Mapel Tahun Ajaran Baru, konsideran menimbang/mengingat, serta lampiran rincian beban tugas."
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+    # Baris 1: Kartu 1 & Kartu 2
+    r1_col1, r1_col2 = st.columns(2, gap="small")
+    with r1_col1:
+        with st.container(border=True):
+            st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80", caption="Modul Ajar", use_container_width=True)
+            st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
+            if st.button("📘 Modul", key="btn_tpl_1", use_container_width=True):
+                st.session_state.selected_role = "Guru Kelas (SD)"
+                st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
+                st.session_state.selected_details = "Rancang modul ajar tematik/mapel lengkap: Fase/Kelas, Capaian Pembelajaran (CP), Tujuan Pembelajaran (TP), aktivitas berdiferensiasi, LKPD anak, dan konsep tata letak Canva."
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
-    with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1577896851231-70ef18881754?w=400&q=80", caption="Kesiswaan & Disiplin", use_container_width=True)
-        st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
-        if st.button("👥 Kesiswaan & Disiplin", key="btn_tpl_4", use_container_width=True):
-            st.session_state.selected_role = "Tim Kesiswaan"
-            st.session_state.selected_doc = "Program Pembiasaan Karakter & Tata Tertib"
-            st.session_state.selected_details = "Pedoman pembiasaan budaya positif dan tata tertib siswa, panduan kegiatan sekolah ramah anak, serta jadwal MPLS."
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+    with r1_col2:
+        with st.container(border=True):
+            st.image("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=80", caption="Asesmen Rapor", use_container_width=True)
+            st.markdown('<div class="btn-emerald">', unsafe_allow_html=True)
+            if st.button("📝 Rapor", key="btn_tpl_2", use_container_width=True):
+                st.session_state.selected_role = "Wali Kelas"
+                st.session_state.selected_doc = "Catatan Rapor Siswa"
+                st.session_state.selected_details = "Kompilasi narasi catatan rapor yang konstruktif dan memotivasi untuk siswa (akademik tinggi, butuh bimbingan membaca/hitung, penguatan karakter Profil Pelajar Pancasila)."
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    # Baris 2: Kartu 3 & Kartu 4
+    r2_col1, r2_col2 = st.columns(2, gap="small")
+    with r2_col1:
+        with st.container(border=True):
+            st.image("https://images.unsplash.com/photo-1450133064473-71024230f91b?w=400&q=80", caption="Regulasi SK", use_container_width=True)
+            st.markdown('<div class="btn-purple">', unsafe_allow_html=True)
+            if st.button("🏛️ SK Dinas", key="btn_tpl_3", use_container_width=True):
+                st.session_state.selected_role = "Kepala Sekolah"
+                st.session_state.selected_doc = "Surat Keputusan (SK) Beban Kerja Guru"
+                st.session_state.selected_details = "Draf naskah dinas resmi SK Kepala Sekolah tentang Pembagian Tugas Guru Kelas/Mapel Tahun Ajaran Baru, konsideran menimbang/mengingat, serta lampiran rincian beban tugas."
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+    with r2_col2:
+        with st.container(border=True):
+            st.image("https://images.unsplash.com/photo-1577896851231-70ef18881754?w=400&q=80", caption="Kesiswaan", use_container_width=True)
+            st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
+            if st.button("👥 Disiplin", key="btn_tpl_4", use_container_width=True):
+                st.session_state.selected_role = "Tim Kesiswaan"
+                st.session_state.selected_doc = "Program Pembiasaan Karakter & Tata Tertib"
+                st.session_state.selected_details = "Pedoman pembiasaan budaya positif dan tata tertib siswa, panduan kegiatan sekolah ramah anak, serta jadwal MPLS."
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # --- STUDIO KREASI & VISUAL ---
 st.write("")
@@ -433,7 +439,7 @@ if btn_generate:
             
             contents_payload = [text_prompt]
 
-            # Penanganan Berkas Unggahan Multi-Format
+            # Ekstraksi Berkas
             if uploaded_file is not None:
                 file_bytes = uploaded_file.getvalue()
                 file_name = uploaded_file.name.lower()
@@ -499,7 +505,6 @@ if btn_generate:
 
 # --- TAMPILAN KANVAS & PUSAT UNDUHAN LENGKAP ---
 with canvas_box:
-    # 1. Pratinjau Dokumen Unggahan
     if st.session_state.uploaded_preview_img:
         with st.expander("📷 **Lihat Foto/Dokumen Asli yang Dibaca AI**", expanded=False):
             st.image(st.session_state.uploaded_preview_img, caption="Dokumen Visual yang Diunggah", use_container_width=True)
@@ -508,7 +513,6 @@ with canvas_box:
         with st.expander("📄 **Lihat Kutipan Dokumen Teks/PDF/Word yang Dibaca AI**", expanded=False):
             st.text_area("Isi Teks Dokumen:", value=st.session_state.uploaded_preview_doc, height=120, disabled=True)
 
-    # 2. Gambar Hasil AI & Unduhan PNG
     if st.session_state.generated_image:
         st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
         st.image(st.session_state.generated_image, use_container_width=True)
@@ -521,7 +525,6 @@ with canvas_box:
         )
         st.divider()
 
-    # 3. PUSAT UNDUHAN BERKAS LENGKAP (Word, PDF, Slide PPT, Teks)
     if st.session_state.generated_doc:
         st.markdown("##### 📥 Pusat Unduh Berkas Hasil Kreasi:")
         col_d1, col_d2, col_d3, col_d4 = st.columns(4)
