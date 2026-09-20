@@ -192,7 +192,7 @@ if btn_generate:
                 client = genai.Client(api_key=api_key)
                 prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
                 response = client.models.generate_content(
-                    model="gemini-3.1-pro-preview",
+                    model="gemini-2.5-flash",
                     contents=prompt_input,
                     config={"system_instruction": SYSTEM_INSTRUCTION}
                 )
