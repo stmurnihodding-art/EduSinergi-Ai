@@ -1,7 +1,7 @@
 import streamlit as st
 from google import genai
 
-# 1. Konfigurasi Halaman Wide Dashboard Laptop
+# 1. Konfigurasi Halaman Dashboard Laptop
 st.set_page_config(
     page_title="SekolahKita AI - Canvas",
     page_icon="⚡",
@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Styling CSS Neon Bar, Layout Dashboard & Kartu Gambar
+# 2. Styling CSS Neon Bar & Layout Dashboard
 custom_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&display=swap');
@@ -77,7 +77,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     padding: 18px !important;
 }
 
-/* Tombol Eksekusi Bergradasi */
+/* Tombol Eksekusi Bergradasi Oranye */
 .stButton > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -124,11 +124,12 @@ if "selected_details" not in st.session_state:
 if "generated_doc" not in st.session_state:
     st.session_state.generated_doc = ""
 
-# --- FOLDER GAMBAR / KARTU PINTAS PEMBUKA ---
-with st.expander("📁 **Galeri Templat Cepat (Klik Gambar untuk Membuka Dokumen)**", expanded=True):
-    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+# --- KARTU GAMBAR TEMPLAT TAMPIL TERBUKA DI DASHBOARD ---
+st.markdown("#### 📁 Galeri Templat Cepat")
+col_k1, col_k2, col_k3, col_k4 = st.columns(4)
 
-    with col_k1:
+with col_k1:
+    with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&q=80", caption="Modul Ajar & RPP", use_container_width=True)
         if st.button("Pilih Modul Ajar", key="btn_tpl_1", use_container_width=True):
             st.session_state.selected_role = "Guru Mata Pelajaran"
@@ -136,7 +137,8 @@ with st.expander("📁 **Galeri Templat Cepat (Klik Gambar untuk Membuka Dokumen
             st.session_state.selected_details = "Mata pelajaran Sosiologi kelas X, topik Interaksi Sosial dan Dinamika Kelompok, lengkap dengan LKPD dan konsep infografik Canva."
             st.rerun()
 
-    with col_k2:
+with col_k2:
+    with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", caption="Catatan Rapor", use_container_width=True)
         if st.button("Pilih Catatan Rapor", key="btn_tpl_2", use_container_width=True):
             st.session_state.selected_role = "Wali Kelas"
@@ -144,7 +146,8 @@ with st.expander("📁 **Galeri Templat Cepat (Klik Gambar untuk Membuka Dokumen
             st.session_state.selected_details = "Kategori siswa berprestasi, aktif ekstrakurikuler, butuh motivasi belajar, dan kedisiplinan absensi berlandaskan Profil Pelajar Pancasila."
             st.rerun()
 
-    with col_k3:
+with col_k3:
+    with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", caption="Tata Naskah & SK", use_container_width=True)
         if st.button("Pilih Naskah Dinas", key="btn_tpl_3", use_container_width=True):
             st.session_state.selected_role = "Kepala Sekolah"
@@ -152,7 +155,8 @@ with st.expander("📁 **Galeri Templat Cepat (Klik Gambar untuk Membuka Dokumen
             st.session_state.selected_details = "SK Penetapan Tim Pelaksana Projek Penguatan Profil Pelajar Pancasila (P5) Tahun Ajaran 2026/2027 lengkap dengan konsideran menimbang dan mengingat."
             st.rerun()
 
-    with col_k4:
+with col_k4:
+    with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80", caption="Kesiswaan & Ekstra", use_container_width=True)
         if st.button("Pilih Kesiswaan", key="btn_tpl_4", use_container_width=True):
             st.session_state.selected_role = "Tim Kesiswaan"
@@ -248,7 +252,7 @@ if btn_generate:
             except Exception as e:
                 st.error(f"Terjadi kesalahan: {e}")
 
-# Tampilan Kanvas Setelah Selesai
+# Tampilan Kanvas Setelah Selesai Dirakit
 with canvas_box:
     if st.session_state.generated_doc:
         tab_view, tab_copy = st.tabs(["👁️ Tampilan Dokumen", "📋 Format Salin ke Canva"])
