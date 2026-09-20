@@ -1,5 +1,6 @@
 import streamlit as st
 from google import genai
+from google.genai import types
 
 # 1. Konfigurasi Halaman Dashboard Responsif
 st.set_page_config(
@@ -213,18 +214,20 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-st.caption("Platform Tata Kelola Sekolah, Modul Ajar, dan Administrasi Terintegrasi")
+st.caption("Platform Tata Kelola Sekolah, Modul Ajar, dan Administrasi Terintegrasi (SD - SMP - SMA)")
 st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
 
 # Inisialisasi State Formulir
 if "selected_role" not in st.session_state:
-    st.session_state.selected_role = "Guru Mata Pelajaran"
+    st.session_state.selected_role = "Guru Kelas (SD)"
 if "selected_doc" not in st.session_state:
     st.session_state.selected_doc = ""
 if "selected_details" not in st.session_state:
     st.session_state.selected_details = ""
 if "generated_doc" not in st.session_state:
     st.session_state.generated_doc = ""
+if "generated_image" not in st.session_state:
+    st.session_state.generated_image = None
 
 # 4. Panel Samping (Sidebar)
 with st.sidebar:
@@ -238,13 +241,14 @@ with st.sidebar:
         st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/)")
 
 SYSTEM_INSTRUCTION = """
-Anda adalah "SEKOLAHKITA AI", asisten komprehensif tata kelola sekolah, perancangan beban mengajar guru (JTM), perancangan kurikulum instruksional, tata naskah dinas, dan visualisasi layout siap pakai untuk Canva.
-Tugas Anda membantu menyusun draf dokumen, matriks tabel, modul ajar, catatan rapor, tata tertib, naskah dinas SK resmi, dan konsep infografik/presentasi.
+Anda adalah "SEKOLAHKITA AI", asisten komprehensif tata kelola sekolah, perancangan beban mengajar guru (JTM), kurikulum instruksional (SD, SMP, SMA/SMK), tata naskah dinas, dan perancang tata letak visual untuk Canva.
+Khusus untuk peran Guru Kelas (SD): kuasai pendekatan tematik, fase fondasi A-C Kurikulum Merdeka, literasi-numerasi dini, serta lembar kerja aktivitas peserta didik (LKPD) yang ramah anak.
+Jika dokumen berkaitan dengan infografik, poster, LKPD, atau slide presentasi: berikan instruksi konsep layout, kode skema warna hex, teks terstruktur, serta tautkan panduan ke platform Canva.
 Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidikan.
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
 
-# 5. Tata Letak 3 Kolom Responsif (Di HP otomatis menjadi tumpukan vertikal yang rapi)
+# 5. Tata Letak 3 Kolom Responsif
 col_left, col_center, col_right = st.columns([1, 2.2, 1], gap="small")
 
 # --- SISI KIRI ---
@@ -253,9 +257,9 @@ with col_left:
         st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80", caption="Instruksional & Modul", use_container_width=True)
         st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
         if st.button("📘 Modul Ajar", key="btn_tpl_1", use_container_width=True):
-            st.session_state.selected_role = "Guru Mata Pelajaran"
+            st.session_state.selected_role = "Guru Kelas (SD)"
             st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
-            st.session_state.selected_details = "Rancang modul ajar komprehensif: Identitas modul, Capaian Pembelajaran (CP), Alur Tujuan Pembelajaran (ATP), skenario diferensiasi proses, lembar kerja siswa (LKPD), dan konsep infografik Canva."
+            st.session_state.selected_details = "Rancang modul ajar tematik/mapel lengkap: Fase/Kelas, Capaian Pembelajaran (CP), Tujuan Pembelajaran (TP), aktivitas berdiferensiasi, LKPD anak, dan konsep tata letak Canva."
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -264,14 +268,15 @@ with col_left:
         st.markdown('<div class="btn-emerald">', unsafe_allow_html=True)
         if st.button("📝 Catatan Rapor", key="btn_tpl_2", use_container_width=True):
             st.session_state.selected_role = "Wali Kelas"
-            st.session_state.selected_doc = "Catatan Wali Kelas untuk Buku Rapor"
-            st.session_state.selected_details = "Kompilasi narasi catatan wali kelas yang konstruktif dan memotivasi: kategori siswa berprestasi, aktif ekstrakurikuler, pembinaan disiplin belajar dan kehadiran, serta penguatan Profil Pelajar Pancasila."
+            st.session_state.selected_doc = "Catatan Rapor Siswa"
+            st.session_state.selected_details = "Kompilasi narasi catatan rapor yang konstruktif dan memotivasi untuk siswa (akademik tinggi, butuh bimbingan membaca/hitung, penguatan karakter Profil Pelajar Pancasila)."
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- SISI TENGAH: STUDIO RANCANGAN ---
 roles_list = [
-    "Guru Mata Pelajaran",
+    "Guru Kelas (SD)",
+    "Guru Mata Pelajaran (SMP/SMA/SMK)",
     "Wali Kelas",
     "Kepala Sekolah",
     "Tim Kurikulum",
@@ -291,12 +296,12 @@ with col_center:
         doc_type = st.text_input(
             "Jenis Dokumen / Administrasi:",
             value=st.session_state.selected_doc,
-            placeholder="Contoh: Modul Ajar, Catatan Rapor, SK Pembagian Tugas"
+            placeholder="Contoh: Modul Ajar Tematik, Catatan Rapor, SK Pembagian Tugas"
         )
         details = st.text_area(
             "Detail Tambahan / Konteks:",
             value=st.session_state.selected_details,
-            placeholder="Kriteria siswa, topik materi, target jam tatap muka (JTM), atau petunjuk tata letak Canva...",
+            placeholder="Ketik detail materi... (Jika ingin gambar asli, tambahkan instruksi 'buatkan gambar visual')",
             height=130
         )
         st.markdown('<div class="main-btn">', unsafe_allow_html=True)
@@ -310,8 +315,8 @@ with col_right:
         st.markdown('<div class="btn-purple">', unsafe_allow_html=True)
         if st.button("🏛️ Regulasi & SK", key="btn_tpl_3", use_container_width=True):
             st.session_state.selected_role = "Kepala Sekolah"
-            st.session_state.selected_doc = "Surat Keputusan (SK) Beban Kerja & Tim Sekolah"
-            st.session_state.selected_details = "Draf naskah dinas resmi SK Kepala Sekolah tentang Pembagian Tugas Mengajar Guru dan Bimbingan Konseling Tahun Ajaran Baru, lengkap dengan konsideran menimbang, mengingat, memutuskan, serta lampiran rincian jam tugas guru."
+            st.session_state.selected_doc = "Surat Keputusan (SK) Beban Kerja Guru"
+            st.session_state.selected_details = "Draf naskah dinas resmi SK Kepala Sekolah tentang Pembagian Tugas Guru Kelas/Mapel Tahun Ajaran Baru, konsideran menimbang/mengingat, serta lampiran rincian beban tugas."
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -320,8 +325,8 @@ with col_right:
         st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
         if st.button("👥 Kesiswaan & Disiplin", key="btn_tpl_4", use_container_width=True):
             st.session_state.selected_role = "Tim Kesiswaan"
-            st.session_state.selected_doc = "Program Kesiswaan & Tata Tertib Siswa"
-            st.session_state.selected_details = "Buku panduan tata tertib dan matriks sistem poin penghargaan/pelanggaran siswa, program pembiasaan budaya positif, serta jadwal pelaksanaan Masa Pengenalan Lingkungan Sekolah (MPLS)."
+            st.session_state.selected_doc = "Program Pembiasaan Karakter & Tata Tertib"
+            st.session_state.selected_details = "Pedoman pembiasaan budaya positif dan tata tertib siswa, panduan kegiatan sekolah ramah anak, serta jadwal MPLS."
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -330,7 +335,7 @@ st.write("")
 st.markdown('<div class="canvas-heading">🎨 STUDIO KREASI & VISUAL</div>', unsafe_allow_html=True)
 canvas_box = st.container(border=True)
 
-# Logika Streaming Generasi
+# Logika Pembuatan Dokumen / Visualisasi Gambar
 if btn_generate:
     if not api_key:
         st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
@@ -340,8 +345,14 @@ if btn_generate:
         with st.spinner("Sedang meracik ke studio visual..."):
             try:
                 client = genai.Client(api_key=api_key)
-                prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
+                combined_input = f"{doc_type} {details}".lower()
                 
+                # Cek apakah ada permintaan gambar nyata secara eksplisit
+                keywords_image = ["buatkan gambar", "hasilkan gambar", "generate image", "ilustrasi gambar", "buat gambar"]
+                need_real_image = any(kw in combined_input for kw in keywords_image)
+
+                # 1. Hasilkan Naskah & Panduan Desain Layout Canva
+                prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
                 response_stream = client.models.generate_content_stream(
                     model="gemini-3.6-flash",
                     contents=prompt_input,
@@ -356,20 +367,53 @@ if btn_generate:
                         stream_placeholder.markdown(full_text)
                 
                 st.session_state.generated_doc = full_text
+
+                # 2. Jika ada permintaan gambar spesifik, panggil model Image Generation
+                if need_real_image:
+                    img_response = client.models.generate_images(
+                        model='imagen-3.0-generate-002',
+                        prompt=f"Educational illustration for school, classroom context: {doc_type}, {details}",
+                        config=types.GenerateImagesConfig(
+                            number_of_images=1,
+                            aspect_ratio="16:9"
+                        )
+                    )
+                    for generated_image in img_response.generated_images:
+                        st.session_state.generated_image = generated_image.image.image_bytes
+                else:
+                    st.session_state.generated_image = None
+
                 st.rerun()
             except Exception as e:
                 st.error(f"Terjadi kesalahan: {e}")
 
 # Tampilan Hasil di Studio Kreasi & Visual
 with canvas_box:
+    if st.session_state.generated_image:
+        st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
+        st.image(st.session_state.generated_image, use_container_width=True)
+        st.download_button(
+            label="💾 Unduh Gambar Ilustrasi",
+            data=st.session_state.generated_image,
+            file_name="sekolahkita_visual.png",
+            mime="image/png"
+        )
+        st.divider()
+
     if st.session_state.generated_doc:
-        tab_view, tab_copy = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format ke Canva"])
+        tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
         
         with tab_view:
             st.markdown(st.session_state.generated_doc)
         
         with tab_copy:
-            st.caption("Klik tombol salin di pojok kanan atas untuk menempelkannya langsung ke Canva:")
+            st.caption("Klik tombol salin di pojok kanan atas untuk menempelkannya ke lembar kerja Anda:")
             st.code(st.session_state.generated_doc, language="markdown")
+            
+        with tab_canva:
+            st.markdown("##### 🚀 Lanjutkan Desain ke Canva")
+            st.write("Jika Anda memerlukan templat desain visual, tata letak poster, atau LKPD interaktif, klik tautan Canva di bawah ini:")
+            st.link_button("🌐 Buka Editor Canva", "https://www.canva.com/")
+            st.info("💡 **Tips Guru:** Salin teks atau tabel dari tab *Salin Format Naskah*, lalu tempelkan langsung ke kotak teks atau elemen tabel di dalam Canva.")
     elif not btn_generate:
         st.info("Draf dokumen dinas, matriks tabel, atau konsep visual Canva akan tampil di lembar ini.")
