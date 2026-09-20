@@ -146,7 +146,7 @@ div[data-testid="stCaptionContainer"] {
     font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
-    background: rgba(168, 85, 247, 0.08) !important;
+    background: rgba(16, 185, 129, 0.08) !important;
     border: 1px solid #10b981 !important;
     color: #10b981 !important;
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
@@ -178,16 +178,36 @@ div[data-testid="stCaptionContainer"] {
     padding: 3px 6px !important;
 }
 
-/* Tombol Utama */
+/* Tombol Utama Generate */
 .main-btn > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
+    font-size: 0.95rem !important;
     border-radius: 8px !important;
     background: linear-gradient(90deg, #ff7b00, #e65c00) !important;
     color: white !important;
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
     margin-top: 4px;
+}
+.main-btn > button:hover {
+    box-shadow: 0 0 22px rgba(255, 123, 0, 0.8) !important;
+    transform: translateY(-1px);
+}
+
+/* Tombol Revisi */
+.refine-btn > button {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    font-weight: 700 !important;
+    border-radius: 8px !important;
+    background: linear-gradient(90deg, #00e5ff, #0099cc) !important;
+    color: black !important;
+    border: none !important;
+    box-shadow: 0 0 12px rgba(0, 229, 255, 0.4) !important;
+}
+.refine-btn > button:hover {
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.8) !important;
+    color: white !important;
 }
 
 /* Styling Tombol Unduh */
@@ -279,7 +299,7 @@ Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidi
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
 
-# Generator Berkas
+# Generator Berkas Unduhan
 def create_docx_bytes(markdown_text):
     doc = docx.Document()
     doc.add_heading("Draf Hasil Rancangan - SEKOLAHKITA AI", level=1)
@@ -334,7 +354,7 @@ def create_pptx_bytes(markdown_text):
     prs.save(out)
     return out.getvalue()
 
-# Fungsi Renderer Hasil dan Tombol Download
+# Fungsi Renderer Hasil, Editor Naskah, Tombol Unduh & Refine Prompt
 def render_canvas_content(container):
     with container:
         if st.session_state.uploaded_preview_img:
@@ -397,17 +417,78 @@ def render_canvas_content(container):
                 )
 
             st.write("")
-            tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
+            tab_view, tab_edit, tab_copy, tab_canva = st.tabs([
+                "👁️ Tampilan Naskah & Rancangan",
+                "✏️ Edit Naskah Langsung",
+                "📋 Salin Format Naskah",
+                "🎨 Panduan Buka di Canva"
+            ])
+            
             with tab_view:
                 st.markdown(st.session_state.generated_doc)
+
+            with tab_edit:
+                st.caption("Anda dapat mengubah, menambahkan, atau memotong isi naskah secara langsung di bawah ini:")
+                edited_text = st.text_area("Editor Teks:", value=st.session_state.generated_doc, height=350, key="editor_naskah_area")
+                if st.button("💾 Simpan Perubahan Naskah", use_container_width=True):
+                    st.session_state.generated_doc = edited_text
+                    st.success("✅ Perubahan naskah berhasil disimpan! File unduhan otomatis diperbarui.")
+                    st.rerun()
+
             with tab_copy:
                 st.caption("Klik tombol salin di pojok kanan atas untuk menempelkannya ke lembar kerja Anda:")
                 st.code(st.session_state.generated_doc, language="markdown")
+
             with tab_canva:
                 st.markdown("##### 🚀 Lanjutkan Desain ke Canva")
                 st.write("Jika Anda memerlukan templat desain visual, tata letak poster, atau LKPD interaktif, klik tautan Canva di bawah ini:")
                 st.link_button("🌐 Buka Editor Canva", "https://www.canva.com/")
                 st.info("💡 **Tips Guru:** Salin teks atau tabel dari tab *Salin Format Naskah*, lalu tempelkan langsung ke kotak teks atau elemen tabel di dalam Canva.")
+
+            # --- FITUR AJUKAN REVISI / RE-GENERATE DENGAN PERINTAH BARU ---
+            st.divider()
+            st.markdown("##### 🔄 Ajukan Revisi / Lanjutkan Permintaan:")
+            refine_input = st.text_input(
+                "Ingin menambah, mengubah, atau memperdalam materi di atas?",
+                placeholder="Contoh: 'Tolong tambahkan 5 soal kuis esai', 'Ubah pendekatan materi menjadi lebih santai untuk siswa', dsb...",
+                key="input_refine_prompt"
+            )
+            st.markdown('<div class="refine-btn">', unsafe_allow_html=True)
+            btn_refine = st.button("🚀 Kirim Revisi / Generate Ulang", use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+
+            if btn_refine:
+                if not refine_input:
+                    st.warning("Silakan ketik instruksi revisi yang diinginkan terlebih dahulu.")
+                elif not api_key:
+                    st.error("API Key belum terpasang.")
+                else:
+                    try:
+                        client = genai.Client(api_key=api_key)
+                        refine_payload = [
+                            f"Berikut naskah awal yang sudah dibuat:\n{st.session_state.generated_doc}\n\n"
+                            f"Instruksi Revisi/Tambahan dari Pengguna:\n{refine_input}\n\n"
+                            f"Tolong sesuaikan, revisi, atau tambahkan naskah tersebut secara lengkap sesuai instruksi revisi:"
+                        ]
+                        with st.spinner("Sedang memperbarui rancangan sesuai instruksi revisi Anda..."):
+                            for model_name in ["gemini-3.6-flash", "gemini-2.5-flash"]:
+                                try:
+                                    resp = client.models.generate_content(
+                                        model=model_name,
+                                        contents=refine_payload,
+                                        config={"system_instruction": SYSTEM_INSTRUCTION}
+                                    )
+                                    if resp and resp.text:
+                                        st.session_state.generated_doc = resp.text
+                                        st.rerun()
+                                except Exception as err:
+                                    if "503" in str(err):
+                                        time.sleep(1)
+                                        continue
+                                    else:
+                                        raise err
+                    except Exception as e:
+                        st.error(f"Gagal melakukan revisi: {e}")
 
 # 5. Tata Letak 2 Kolom: Studio di Kiri (2.3) - 4 Kartu di Kanan (1.0)
 col_left, col_right = st.columns([2.3, 1.0], gap="medium")
@@ -451,7 +532,7 @@ with col_left:
         )
 
         st.markdown('<div class="main-btn">', unsafe_allow_html=True)
-        btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
+        btn_generate = st.button("⚡ Hasilkan Rancangan (Generate)", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
 # --- SISI KANAN: 4 KARTU GRID 2x2 KOMPAK ---
@@ -563,7 +644,6 @@ if btn_generate:
                     st.session_state.uploaded_preview_doc = pdf_text[:2000]
                     contents_payload.append(f"\n--- ISI DOKUMEN PDF ({uploaded_file.name}) ---\n{pdf_text}")
 
-            # Eksekusi AI dengan Auto-Fallback jika terjadi 503
             candidate_models = ["gemini-3.6-flash", "gemini-2.5-flash"]
             response_text = None
 
@@ -588,7 +668,7 @@ if btn_generate:
             if response_text:
                 st.session_state.generated_doc = response_text
             else:
-                st.error("Layanan AI sedang sibuk sementara. Silakan klik kembali tombol 'Susun ke Kanvas'.")
+                st.error("Layanan AI sedang sibuk sementara. Silakan klik kembali tombol 'Hasilkan Rancangan (Generate)'.")
 
             # Pembuatan Gambar Ilustrasi jika Diminta
             if need_real_image and response_text:
