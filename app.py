@@ -246,21 +246,27 @@ div[data-testid="stDownloadButton"] > button:hover {
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 3. Header Judul
-st.markdown(
-    """
-    <div class="hero-wrapper">
-        <span class="hero-icon">⚡</span>
-        <span class="title-sekolah">SEKOLAH</span>
-        <span class="title-kita">KITA</span>
-        <span class="title-ai">AI</span>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+
 st.caption("Platform Tata Kelola Sekolah, Modul Ajar, dan Administrasi Terintegrasi (SD - SMP - SMA)")
 st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
-
+# 3. Header Judul dengan Logo Resmi JacS
+col_logo, col_title = st.columns([0.08, 0.92], gap="small")
+with col_logo:
+    try:
+        st.image("logo.png", width=46)
+    except Exception:
+        st.markdown("<span class='hero-icon'>⚡</span>", unsafe_allow_html=True)
+with col_title:
+    st.markdown(
+        """
+        <div class="hero-wrapper" style="margin-top: 2px;">
+            <span class="title-sekolah">JacS</span>
+            <span class="title-kita">AI</span>
+            <span class="title-ai">GENERATOR</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
 # Inisialisasi State Formulir
 if "selected_role" not in st.session_state:
     st.session_state.selected_role = "Guru Mata Pelajaran (SMP/SMA/SMK)"
