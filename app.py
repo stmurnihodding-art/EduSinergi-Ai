@@ -2,6 +2,7 @@ import streamlit as st
 from google import genai
 from google.genai import types
 import io
+import time
 import docx
 from pptx import Presentation
 from pptx.util import Pt
@@ -145,7 +146,7 @@ div[data-testid="stCaptionContainer"] {
     font-size: 0.74rem !important;
     font-weight: 700 !important;
     border-radius: 6px !important;
-    background: rgba(16, 185, 129, 0.08) !important;
+    background: rgba(168, 85, 247, 0.08) !important;
     border: 1px solid #10b981 !important;
     color: #10b981 !important;
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
@@ -177,7 +178,7 @@ div[data-testid="stCaptionContainer"] {
     padding: 3px 6px !important;
 }
 
-/* Tombol Eksekusi Utama */
+/* Tombol Utama */
 .main-btn > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -189,10 +190,10 @@ div[data-testid="stCaptionContainer"] {
     margin-top: 4px;
 }
 
-/* Styling Tombol Unduh agar Tampak Jelas */
+/* Styling Tombol Unduh */
 div[data-testid="stDownloadButton"] > button {
     font-weight: 600 !important;
-    font-size: 0.8rem !important;
+    font-size: 0.82rem !important;
     border-radius: 8px !important;
     border: 1px solid rgba(0, 242, 254, 0.5) !important;
     background: rgba(0, 242, 254, 0.08) !important;
@@ -242,7 +243,7 @@ st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
 
 # Inisialisasi State Formulir
 if "selected_role" not in st.session_state:
-    st.session_state.selected_role = "Guru Kelas (SD)"
+    st.session_state.selected_role = "Guru Mata Pelajaran (SMP/SMA/SMK)"
 if "selected_doc" not in st.session_state:
     st.session_state.selected_doc = ""
 if "selected_details" not in st.session_state:
@@ -322,7 +323,7 @@ def create_pptx_bytes(markdown_text):
         chunk = lines[i:i+chunk_size]
         slide = prs.slides.add_slide(slide_layout)
         title = slide.shapes.title
-        title.text = "SEKOLAHKITA AI - Materi"
+        title.text = "SEKOLAHKITA AI - Slide Bahan Ajar"
         body = slide.shapes.placeholders[1]
         tf = body.text_frame
         for idx, item in enumerate(chunk):
@@ -421,7 +422,7 @@ roles_list = [
     "Tim Kesiswaan",
     "Tata Usaha (TU)"
 ]
-current_role_index = roles_list.index(st.session_state.selected_role) if st.session_state.selected_role in roles_list else 0
+current_role_index = roles_list.index(st.session_state.selected_role) if st.session_state.selected_role in roles_list else 1
 
 with col_left:
     with st.container(border=True):
@@ -453,16 +454,15 @@ with col_left:
         btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SISI KANAN: 4 KARTU BERADA DI KANAN SEMUA (GRID 2x2 KOMPAK) ---
+# --- SISI KANAN: 4 KARTU GRID 2x2 KOMPAK ---
 with col_right:
-    # Baris 1: Kartu 1 & Kartu 2
     r1_col1, r1_col2 = st.columns(2, gap="small")
     with r1_col1:
         with st.container(border=True):
             st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80", caption="Modul Ajar", use_container_width=True)
             st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
             if st.button("📘 Modul", key="btn_tpl_1", use_container_width=True):
-                st.session_state.selected_role = "Guru Kelas (SD)"
+                st.session_state.selected_role = "Guru Mata Pelajaran (SMP/SMA/SMK)"
                 st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
                 st.session_state.selected_details = "Rancang modul ajar tematik/mapel lengkap: Fase/Kelas, Capaian Pembelajaran (CP), Tujuan Pembelajaran (TP), aktivitas berdiferensiasi, LKPD anak, dan konsep tata letak Canva."
                 st.rerun()
@@ -479,7 +479,6 @@ with col_right:
                 st.rerun()
             st.markdown('</div>', unsafe_allow_html=True)
 
-    # Baris 2: Kartu 3 & Kartu 4
     r2_col1, r2_col2 = st.columns(2, gap="small")
     with r2_col1:
         with st.container(border=True):
@@ -508,7 +507,7 @@ st.write("")
 st.markdown('<div class="canvas-heading">🎨 STUDIO KREASI & VISUAL</div>', unsafe_allow_html=True)
 canvas_box = st.container(border=True)
 
-# Logika Pemrosesan Berkas Dokumen & Gemini 3.6 Flash
+# Logika Pemrosesan Berkas Dokumen dengan Fallback & Auto-Retry
 if btn_generate:
     if not api_key:
         st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
@@ -564,26 +563,49 @@ if btn_generate:
                     st.session_state.uploaded_preview_doc = pdf_text[:2000]
                     contents_payload.append(f"\n--- ISI DOKUMEN PDF ({uploaded_file.name}) ---\n{pdf_text}")
 
-            with st.spinner("Sedang menyusun naskah dan rancangan..."):
-                response = client.models.generate_content(
-                    model="gemini-3.6-flash",
-                    contents=contents_payload,
-                    config={"system_instruction": SYSTEM_INSTRUCTION}
-                )
-                st.session_state.generated_doc = response.text
+            # Eksekusi AI dengan Auto-Fallback jika terjadi 503
+            candidate_models = ["gemini-3.6-flash", "gemini-2.5-flash"]
+            response_text = None
 
-            if need_real_image:
-                with st.spinner("Sedang merender ilustrasi visual..."):
-                    img_response = client.models.generate_images(
-                        model='imagen-3.0-generate-002',
-                        prompt=f"Educational illustration for school, classroom context: {target_doc_title}, {details}",
-                        config=types.GenerateImagesConfig(
-                            number_of_images=1,
-                            aspect_ratio="16:9"
+            with st.spinner("Sedang menyusun naskah dan rancangan materi..."):
+                for model_name in candidate_models:
+                    try:
+                        resp = client.models.generate_content(
+                            model=model_name,
+                            contents=contents_payload,
+                            config={"system_instruction": SYSTEM_INSTRUCTION}
                         )
-                    )
-                    for generated_image in img_response.generated_images:
-                        st.session_state.generated_image = generated_image.image.image_bytes
+                        if resp and resp.text:
+                            response_text = resp.text
+                            break
+                    except Exception as err:
+                        if "503" in str(err):
+                            time.sleep(1)
+                            continue
+                        else:
+                            raise err
+
+            if response_text:
+                st.session_state.generated_doc = response_text
+            else:
+                st.error("Layanan AI sedang sibuk sementara. Silakan klik kembali tombol 'Susun ke Kanvas'.")
+
+            # Pembuatan Gambar Ilustrasi jika Diminta
+            if need_real_image and response_text:
+                with st.spinner("Sedang merender ilustrasi visual..."):
+                    try:
+                        img_response = client.models.generate_images(
+                            model='imagen-3.0-generate-002',
+                            prompt=f"Educational illustration for school, classroom context: {target_doc_title}, {details}",
+                            config=types.GenerateImagesConfig(
+                                number_of_images=1,
+                                aspect_ratio="16:9"
+                            )
+                        )
+                        for generated_image in img_response.generated_images:
+                            st.session_state.generated_image = generated_image.image.image_bytes
+                    except Exception:
+                        pass
 
             render_canvas_content(canvas_box)
 
