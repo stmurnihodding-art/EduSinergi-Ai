@@ -177,7 +177,7 @@ div[data-testid="stCaptionContainer"] {
     padding: 3px 6px !important;
 }
 
-/* Tombol Utama */
+/* Tombol Eksekusi Utama */
 .main-btn > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -187,6 +187,22 @@ div[data-testid="stCaptionContainer"] {
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
     margin-top: 4px;
+}
+
+/* Styling Tombol Unduh agar Tampak Jelas */
+div[data-testid="stDownloadButton"] > button {
+    font-weight: 600 !important;
+    font-size: 0.8rem !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(0, 242, 254, 0.5) !important;
+    background: rgba(0, 242, 254, 0.08) !important;
+    color: #00f2fe !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid="stDownloadButton"] > button:hover {
+    background: #00f2fe !important;
+    color: #000000 !important;
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.7) !important;
 }
 
 @media (max-width: 768px) {
@@ -316,6 +332,81 @@ def create_pptx_bytes(markdown_text):
     out = io.BytesIO()
     prs.save(out)
     return out.getvalue()
+
+# Fungsi Renderer Hasil dan Tombol Download
+def render_canvas_content(container):
+    with container:
+        if st.session_state.uploaded_preview_img:
+            with st.expander("📷 **Lihat Foto/Dokumen Asli yang Dibaca AI**", expanded=False):
+                st.image(st.session_state.uploaded_preview_img, caption="Dokumen Visual yang Diunggah", use_container_width=True)
+
+        if st.session_state.uploaded_preview_doc:
+            with st.expander("📄 **Lihat Kutipan Dokumen Teks/PDF/Word yang Dibaca AI**", expanded=False):
+                st.text_area("Isi Teks Dokumen:", value=st.session_state.uploaded_preview_doc, height=120, disabled=True)
+
+        if st.session_state.generated_image:
+            st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
+            st.image(st.session_state.generated_image, use_container_width=True)
+            st.download_button(
+                label="💾 Unduh Gambar Ilustrasi (PNG)",
+                data=st.session_state.generated_image,
+                file_name="sekolahkita_visual.png",
+                mime="image/png",
+                use_container_width=True
+            )
+            st.divider()
+
+        if st.session_state.generated_doc:
+            st.markdown("##### 📥 Pusat Unduh Berkas Hasil Kreasi:")
+            col_d1, col_d2, col_d3, col_d4 = st.columns(4)
+            with col_d1:
+                docx_bytes = create_docx_bytes(st.session_state.generated_doc)
+                st.download_button(
+                    label="📄 Unduh Word (.docx)",
+                    data=docx_bytes,
+                    file_name="Rancangan_SekolahKita_AI.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True
+                )
+            with col_d2:
+                pdf_bytes = create_pdf_bytes(st.session_state.generated_doc)
+                st.download_button(
+                    label="📑 Unduh PDF (.pdf)",
+                    data=pdf_bytes,
+                    file_name="Rancangan_SekolahKita_AI.pdf",
+                    mime="application/pdf",
+                    use_container_width=True
+                )
+            with col_d3:
+                pptx_bytes = create_pptx_bytes(st.session_state.generated_doc)
+                st.download_button(
+                    label="📊 Unduh Slide (.pptx)",
+                    data=pptx_bytes,
+                    file_name="Materi_SekolahKita_AI.pptx",
+                    mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    use_container_width=True
+                )
+            with col_d4:
+                st.download_button(
+                    label="📝 Unduh Teks (.txt)",
+                    data=st.session_state.generated_doc,
+                    file_name="Rancangan_SekolahKita_AI.txt",
+                    mime="text/plain",
+                    use_container_width=True
+                )
+
+            st.write("")
+            tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
+            with tab_view:
+                st.markdown(st.session_state.generated_doc)
+            with tab_copy:
+                st.caption("Klik tombol salin di pojok kanan atas untuk menempelkannya ke lembar kerja Anda:")
+                st.code(st.session_state.generated_doc, language="markdown")
+            with tab_canva:
+                st.markdown("##### 🚀 Lanjutkan Desain ke Canva")
+                st.write("Jika Anda memerlukan templat desain visual, tata letak poster, atau LKPD interaktif, klik tautan Canva di bawah ini:")
+                st.link_button("🌐 Buka Editor Canva", "https://www.canva.com/")
+                st.info("💡 **Tips Guru:** Salin teks atau tabel dari tab *Salin Format Naskah*, lalu tempelkan langsung ke kotak teks atau elemen tabel di dalam Canva.")
 
 # 5. Tata Letak 2 Kolom: Studio di Kiri (2.3) - 4 Kartu di Kanan (1.0)
 col_left, col_right = st.columns([2.3, 1.0], gap="medium")
@@ -473,19 +564,13 @@ if btn_generate:
                     st.session_state.uploaded_preview_doc = pdf_text[:2000]
                     contents_payload.append(f"\n--- ISI DOKUMEN PDF ({uploaded_file.name}) ---\n{pdf_text}")
 
-            response_stream = client.models.generate_content_stream(
-                model="gemini-3.6-flash",
-                contents=contents_payload,
-                config={"system_instruction": SYSTEM_INSTRUCTION}
-            )
-            
-            full_text = ""
-            with canvas_box:
-                stream_placeholder = st.empty()
-                for chunk in response_stream:
-                    full_text += chunk.text
-                    stream_placeholder.markdown(full_text)
-            st.session_state.generated_doc = full_text
+            with st.spinner("Sedang menyusun naskah dan rancangan..."):
+                response = client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=contents_payload,
+                    config={"system_instruction": SYSTEM_INSTRUCTION}
+                )
+                st.session_state.generated_doc = response.text
 
             if need_real_image:
                 with st.spinner("Sedang merender ilustrasi visual..."):
@@ -500,85 +585,13 @@ if btn_generate:
                     for generated_image in img_response.generated_images:
                         st.session_state.generated_image = generated_image.image.image_bytes
 
+            render_canvas_content(canvas_box)
+
         except Exception as e:
             st.error(f"Terjadi kesalahan saat memproses: {e}")
-
-# --- TAMPILAN KANVAS & PUSAT UNDUHAN LENGKAP ---
-with canvas_box:
-    if st.session_state.uploaded_preview_img:
-        with st.expander("📷 **Lihat Foto/Dokumen Asli yang Dibaca AI**", expanded=False):
-            st.image(st.session_state.uploaded_preview_img, caption="Dokumen Visual yang Diunggah", use_container_width=True)
-
-    if st.session_state.uploaded_preview_doc:
-        with st.expander("📄 **Lihat Kutipan Dokumen Teks/PDF/Word yang Dibaca AI**", expanded=False):
-            st.text_area("Isi Teks Dokumen:", value=st.session_state.uploaded_preview_doc, height=120, disabled=True)
-
-    if st.session_state.generated_image:
-        st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
-        st.image(st.session_state.generated_image, use_container_width=True)
-        st.download_button(
-            label="💾 Unduh Gambar Ilustrasi (PNG)",
-            data=st.session_state.generated_image,
-            file_name="sekolahkita_visual.png",
-            mime="image/png",
-            use_container_width=True
-        )
-        st.divider()
-
-    if st.session_state.generated_doc:
-        st.markdown("##### 📥 Pusat Unduh Berkas Hasil Kreasi:")
-        col_d1, col_d2, col_d3, col_d4 = st.columns(4)
-        
-        with col_d1:
-            docx_bytes = create_docx_bytes(st.session_state.generated_doc)
-            st.download_button(
-                label="📄 Unduh Word (.docx)",
-                data=docx_bytes,
-                file_name="Rancangan_SekolahKita_AI.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-        with col_d2:
-            pdf_bytes = create_pdf_bytes(st.session_state.generated_doc)
-            st.download_button(
-                label="📑 Unduh PDF (.pdf)",
-                data=pdf_bytes,
-                file_name="Rancangan_SekolahKita_AI.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-        with col_d3:
-            pptx_bytes = create_pptx_bytes(st.session_state.generated_doc)
-            st.download_button(
-                label="📊 Unduh Slide (.pptx)",
-                data=pptx_bytes,
-                file_name="Materi_SekolahKita_AI.pptx",
-                mime="application/vnd.openxmlformats-officedocument.presentationml.presentation",
-                use_container_width=True
-            )
-        with col_d4:
-            st.download_button(
-                label="📝 Unduh Teks (.txt)",
-                data=st.session_state.generated_doc,
-                file_name="Rancangan_SekolahKita_AI.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
-
-        st.write("")
-        tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
-        
-        with tab_view:
-            st.markdown(st.session_state.generated_doc)
-        
-        with tab_copy:
-            st.caption("Klik tombol salin di pojok kanan atas untuk menempelkannya ke lembar kerja Anda:")
-            st.code(st.session_state.generated_doc, language="markdown")
-            
-        with tab_canva:
-            st.markdown("##### 🚀 Lanjutkan Desain ke Canva")
-            st.write("Jika Anda memerlukan templat desain visual, tata letak poster, atau LKPD interaktif, klik tautan Canva di bawah ini:")
-            st.link_button("🌐 Buka Editor Canva", "https://www.canva.com/")
-            st.info("💡 **Tips Guru:** Salin teks atau tabel dari tab *Salin Format Naskah*, lalu tempelkan langsung ke kotak teks atau elemen tabel di dalam Canva.")
-    elif not btn_generate:
-        st.info("Draf dokumen dinas, matriks tabel, slide materi, atau konsep visual Canva akan tampil di lembar ini.")
+else:
+    if st.session_state.generated_doc or st.session_state.generated_image:
+        render_canvas_content(canvas_box)
+    else:
+        with canvas_box:
+            st.info("Draf dokumen dinas, matriks tabel, slide materi, atau konsep visual Canva akan tampil di lembar ini.")
