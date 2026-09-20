@@ -3,78 +3,92 @@ from google import genai
 
 # 1. Konfigurasi Halaman Dashboard Laptop
 st.set_page_config(
-    page_title="SekolahKita AI - Canvas",
+    page_title="SEKOLAHKITA AI - Canvas",
     page_icon="⚡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# 2. Styling CSS Neon Bar & Layout Dashboard
+# 2. Styling CSS Neon Bar, Tipografi Dinamis & Layout Presisi
 custom_css = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Orbitron:wght@800;900&display=swap');
 
 html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Format Judul Dua Warna */
+/* Judul Utama Dinamis & Modern (SEKOLAHKITA Tersambung) */
 .hero-wrapper {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin-bottom: 2px;
 }
 
 .hero-icon {
-    font-size: 2.2rem;
+    font-size: 2.3rem;
+    filter: drop-shadow(0 0 10px rgba(255, 123, 0, 0.7));
 }
 
-.title-sekolah {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2.3rem;
+.title-brand {
+    font-family: 'Syne', 'Orbitron', sans-serif;
+    font-size: 2.5rem;
     font-weight: 800;
-    color: #FFFFFF;
-    letter-spacing: 2px;
-    text-shadow: 0 0 10px rgba(255, 255, 255, 0.4);
-}
-
-.title-kita {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 2.3rem;
-    font-weight: 800;
-    color: #FF7B00;
-    letter-spacing: 2px;
-    text-shadow: 0 0 14px rgba(255, 123, 0, 0.7), 0 0 25px rgba(255, 123, 0, 0.4);
+    letter-spacing: 1.5px;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F3F4F6 45%, #FF7B00 80%, #FFAE19 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 25px rgba(255, 123, 0, 0.35);
 }
 
 .title-ai {
     font-family: 'Orbitron', sans-serif;
-    font-size: 2.3rem;
-    font-weight: 800;
-    color: #00f2fe;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #00F2FE;
     letter-spacing: 2px;
-    text-shadow: 0 0 14px rgba(0, 242, 254, 0.7);
+    text-shadow: 0 0 16px rgba(0, 242, 254, 0.75), 0 0 30px rgba(0, 242, 254, 0.4);
 }
 
-/* Garis Neon Bar */
+/* Garis Neon Bar Menyala Dua Aksen */
 .neon-glow-bar {
     height: 4px;
     width: 100%;
     background: linear-gradient(90deg, #00f2fe 0%, #4facfe 35%, #ff7b00 70%, #ffae19 100%);
     border-radius: 4px;
     box-shadow: 0 0 12px rgba(0, 242, 254, 0.6), 0 0 22px rgba(255, 123, 0, 0.5);
-    margin-top: 6px;
-    margin-bottom: 20px;
+    margin-top: 8px;
+    margin-bottom: 22px;
 }
 
-/* Border Dinamis */
+/* Penyeragaman Tinggi Kotak Kartu agar Sejajar Rata */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
     border: 1px solid rgba(0, 242, 254, 0.35) !important;
     box-shadow: 0 0 16px rgba(0, 242, 254, 0.08) !important;
     background-color: rgba(255, 255, 255, 0.02) !important;
-    padding: 18px !important;
+    padding: 16px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    min-height: 290px !important;
+}
+
+/* Ukuran Gambar Seragam & Pas di Layar */
+div[data-testid="stImage"] img {
+    height: 145px !important;
+    width: 100% !important;
+    object-fit: cover !important;
+    border-radius: 8px !important;
+}
+
+/* Keterangan Teks Bawah Gambar */
+div[data-testid="stCaptionContainer"] {
+    text-align: center !important;
+    font-weight: 600 !important;
+    color: #E2E8F0 !important;
+    margin-top: 6px !important;
 }
 
 /* Tombol Eksekusi Bergradasi Oranye */
@@ -87,7 +101,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
     transition: all 0.3s ease-in-out !important;
-    margin-top: 6px;
+    margin-top: 8px;
 }
 
 .stButton > button:hover {
@@ -99,13 +113,12 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# 3. Header Judul
+# 3. Header Judul (SEKOLAHKITA Bersambung & Font Dinamis)
 st.markdown(
     """
     <div class="hero-wrapper">
         <span class="hero-icon">⚡</span>
-        <span class="title-sekolah">SEKOLAH</span>
-        <span class="title-kita">KITA</span>
+        <span class="title-brand">SEKOLAHKITA</span>
         <span class="title-ai">AI</span>
     </div>
     """,
@@ -116,7 +129,7 @@ st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
 
 # Inisialisasi State Formulir
 if "selected_role" not in st.session_state:
-    st.session_state.selected_role = "Wali Kelas"
+    st.session_state.selected_role = "Guru Mata Pelajaran"
 if "selected_doc" not in st.session_state:
     st.session_state.selected_doc = ""
 if "selected_details" not in st.session_state:
@@ -124,44 +137,44 @@ if "selected_details" not in st.session_state:
 if "generated_doc" not in st.session_state:
     st.session_state.generated_doc = ""
 
-# --- KARTU GAMBAR TEMPLAT TAMPIL TERBUKA DI DASHBOARD ---
-st.markdown("#### 📁 Galeri Templat Cepat")
+# --- KARTU FOLDER MODERN DENGAN FOTO KONTEKS SEKOLAH RASIONAL ---
+st.markdown("#### 🚀 Akselerator Administrasi Sekolah")
 col_k1, col_k2, col_k3, col_k4 = st.columns(4)
 
 with col_k1:
     with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&q=80", caption="Modul Ajar & RPP", use_container_width=True)
+        st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=500&auto=format&fit=crop&q=80", caption="Instruksional & Modul Ajar", use_container_width=True)
         if st.button("Pilih Modul Ajar", key="btn_tpl_1", use_container_width=True):
             st.session_state.selected_role = "Guru Mata Pelajaran"
             st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
-            st.session_state.selected_details = "Mata pelajaran Sosiologi kelas X, topik Interaksi Sosial dan Dinamika Kelompok, lengkap dengan LKPD dan konsep infografik Canva."
+            st.session_state.selected_details = "Rancang modul ajar komprehensif: Identitas modul, Capaian Pembelajaran (CP), Alur Tujuan Pembelajaran (ATP), skenario diferensiasi proses, lembar kerja siswa (LKPD), dan konsep infografik Canva."
             st.rerun()
 
 with col_k2:
     with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", caption="Catatan Rapor", use_container_width=True)
+        st.image("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&auto=format&fit=crop&q=80", caption="Asesmen & Catatan Rapor", use_container_width=True)
         if st.button("Pilih Catatan Rapor", key="btn_tpl_2", use_container_width=True):
             st.session_state.selected_role = "Wali Kelas"
-            st.session_state.selected_doc = "Catatan Wali Kelas untuk Rapor Semester 1"
-            st.session_state.selected_details = "Kategori siswa berprestasi, aktif ekstrakurikuler, butuh motivasi belajar, dan kedisiplinan absensi berlandaskan Profil Pelajar Pancasila."
+            st.session_state.selected_doc = "Catatan Wali Kelas untuk Buku Rapor"
+            st.session_state.selected_details = "Kompilasi narasi catatan wali kelas yang konstruktif dan memotivasi: kategori siswa berprestasi, aktif ekstrakurikuler, pembinaan disiplin belajar dan kehadiran, serta penguatan Profil Pelajar Pancasila."
             st.rerun()
 
 with col_k3:
     with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", caption="Tata Naskah & SK", use_container_width=True)
-        if st.button("Pilih Naskah Dinas", key="btn_tpl_3", use_container_width=True):
+        st.image("https://images.unsplash.com/photo-1450133064473-71024230f91b?w=500&auto=format&fit=crop&q=80", caption="Regulasi & SK Kedinasan", use_container_width=True)
+        if st.button("Pilih Regulasi & SK", key="btn_tpl_3", use_container_width=True):
             st.session_state.selected_role = "Kepala Sekolah"
-            st.session_state.selected_doc = "Surat Keputusan (SK) Tim Kerja Sekolah"
-            st.session_state.selected_details = "SK Penetapan Tim Pelaksana Projek Penguatan Profil Pelajar Pancasila (P5) Tahun Ajaran 2026/2027 lengkap dengan konsideran menimbang dan mengingat."
+            st.session_state.selected_doc = "Surat Keputusan (SK) Beban Kerja & Tim Sekolah"
+            st.session_state.selected_details = "Draf naskah dinas resmi SK Kepala Sekolah tentang Pembagian Tugas Mengajar Guru dan Bimbingan Konseling Tahun Ajaran Baru, lengkap dengan konsideran menimbang, mengingat, memutuskan, serta lampiran rincian jam tugas guru."
             st.rerun()
 
 with col_k4:
     with st.container(border=True):
-        st.image("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80", caption="Kesiswaan & Ekstra", use_container_width=True)
+        st.image("https://images.unsplash.com/photo-1577896851231-70ef18881754?w=500&auto=format&fit=crop&q=80", caption="Kesiswaan & Tata Tertib", use_container_width=True)
         if st.button("Pilih Kesiswaan", key="btn_tpl_4", use_container_width=True):
             st.session_state.selected_role = "Tim Kesiswaan"
-            st.session_state.selected_doc = "Program Kerja Kesiswaan & Tata Tertib"
-            st.session_state.selected_details = "Regulasi poin pelanggaran dan penghargaan prestasi siswa, serta jadwal kegiatan Masa Pengenalan Lingkungan Sekolah (MPLS)."
+            st.session_state.selected_doc = "Program Kesiswaan & Tata Tertib Siswa"
+            st.session_state.selected_details = "Buku panduan tata tertib dan matriks sistem poin penghargaan/pelanggaran siswa, program pembiasaan budaya positif, serta jadwal pelaksanaan Masa Pengenalan Lingkungan Sekolah (MPLS)."
             st.rerun()
 
 st.write("")
@@ -178,10 +191,10 @@ with st.sidebar:
         st.markdown("[Dapatkan API Key di Google AI Studio](https://aistudio.google.com/)")
 
 SYSTEM_INSTRUCTION = """
-Anda adalah "SekolahKita AI", asisten komprehensif tata kelola sekolah, perancangan instruksional, dan operasional tenaga kependidikan.
-Tugas Anda membantu menyusun dokumen manajerial, modul ajar, catatan rapor, tata tertib, naskah dinas, dan materi presentasi sesuai peran pengguna.
+Anda adalah "SEKOLAHKITA AI", asisten komprehensif tata kelola sekolah, perancangan beban mengajar guru (JTM), perancangan kurikulum instruksional, dan operasional tenaga kependidikan.
+Tugas Anda membantu menyusun matriks pembagian jam mengajar guru, dokumen manajerial, modul ajar, catatan rapor, tata tertib, naskah dinas SK resmi, dan materi presentasi visual siap pakai untuk Canva.
 Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidikan.
-Sajikan langsung format dokumen siap pakai tanpa basa-basi pembuka.
+Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
 
 # 5. Tata Letak Dashboard Layar Laptop (Rasio 1 : 1.4)
@@ -208,12 +221,12 @@ with col_input:
         doc_type = st.text_input(
             "Jenis Dokumen / Administrasi:",
             value=st.session_state.selected_doc,
-            placeholder="Contoh: Modul Ajar, Catatan Rapor"
+            placeholder="Contoh: Modul Ajar, Catatan Rapor, SK Pembagian Tugas"
         )
         details = st.text_area(
             "Detail Tambahan / Konteks:",
             value=st.session_state.selected_details,
-            placeholder="Kriteria siswa, topik materi, atau instruksi tata letak visual...",
+            placeholder="Kriteria siswa, topik materi, target jam tatap muka (JTM), atau petunjuk tata letak visual Canva...",
             height=180
         )
         btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
