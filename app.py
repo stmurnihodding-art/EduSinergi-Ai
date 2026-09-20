@@ -60,7 +60,7 @@ if st.button("🚀 Susun Dokumen", use_container_width=True):
                 prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
                 
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.8-flash",
                     contents=prompt_input,
                     config={"system_instruction": SYSTEM_INSTRUCTION}
                 )
