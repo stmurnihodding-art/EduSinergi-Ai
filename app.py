@@ -1,7 +1,7 @@
 import streamlit as st
 from google import genai
 
-# 1. Konfigurasi Halaman Dashboard Laptop
+# 1. Konfigurasi Halaman Dashboard Responsif
 st.set_page_config(
     page_title="SEKOLAHKITA AI - Studio Kreasi & Visual",
     page_icon="⚡",
@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# 2. Styling CSS Neon Bar, Warna Judul & Tipografi Dinamis
+# 2. Styling CSS Responsif untuk Laptop, Tablet & Ponsel
 custom_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Orbitron:wght@800;900&display=swap');
@@ -18,40 +18,41 @@ html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', sans-serif;
 }
 
-/* Judul Utama: SEKOLAH (Biru) + KITA (Oranye) */
+/* Header & Judul */
 .hero-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-bottom: 0px;
+    flex-wrap: wrap;
 }
 
 .hero-icon {
-    font-size: 2.1rem;
+    font-size: 2rem;
     filter: drop-shadow(0 0 10px rgba(0, 242, 254, 0.7));
 }
 
 .title-sekolah {
     font-family: 'Syne', 'Orbitron', sans-serif;
-    font-size: 2.2rem;
+    font-size: 2.1rem;
     font-weight: 900;
     color: #00e5ff;
     letter-spacing: 1px;
-    text-shadow: 0 0 16px rgba(0, 229, 255, 0.7), 0 0 28px rgba(0, 229, 255, 0.35);
+    text-shadow: 0 0 16px rgba(0, 229, 255, 0.7);
 }
 
 .title-kita {
     font-family: 'Syne', 'Orbitron', sans-serif;
-    font-size: 2.2rem;
+    font-size: 2.1rem;
     font-weight: 900;
     color: #ff7b00;
     letter-spacing: 1px;
-    text-shadow: 0 0 16px rgba(255, 123, 0, 0.7), 0 0 28px rgba(255, 123, 0, 0.35);
+    text-shadow: 0 0 16px rgba(255, 123, 0, 0.7);
 }
 
 .title-ai {
     font-family: 'Orbitron', sans-serif;
-    font-size: 2.2rem;
+    font-size: 2.1rem;
     font-weight: 900;
     color: #ffffff;
     letter-spacing: 2px;
@@ -64,12 +65,12 @@ html, body, [class*="css"] {
     width: 100%;
     background: linear-gradient(90deg, #00f2fe 0%, #4facfe 35%, #ff7b00 70%, #ffae19 100%);
     border-radius: 4px;
-    box-shadow: 0 0 10px rgba(0, 242, 254, 0.6), 0 0 18px rgba(255, 123, 0, 0.5);
+    box-shadow: 0 0 10px rgba(0, 242, 254, 0.6);
     margin-top: 4px;
     margin-bottom: 14px;
 }
 
-/* Tipografi Dinamis Studio Rancangan & Studio Kreasi */
+/* Tipografi Judul Studio & Kanvas */
 .studio-heading {
     font-family: 'Syne', sans-serif;
     font-size: 1.15rem;
@@ -78,9 +79,6 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #00f2fe 0%, #ffffff 70%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    display: flex;
-    align-items: center;
-    gap: 8px;
     margin-bottom: 6px;
 }
 
@@ -92,23 +90,20 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #ffffff 0%, #ffae19 50%, #ff7b00 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    display: flex;
-    align-items: center;
-    gap: 10px;
     margin-top: 10px;
     margin-bottom: 8px;
 }
 
-/* Kotak Border Simetris Rata */
+/* Kotak Border Kontainer */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
     border: 1px solid rgba(0, 242, 254, 0.35) !important;
-    box-shadow: 0 0 16px rgba(0, 242, 254, 0.08) !important;
+    box-shadow: 0 0 14px rgba(0, 242, 254, 0.08) !important;
     background-color: rgba(255, 255, 255, 0.02) !important;
-    padding: 10px 10px !important;
+    padding: 10px !important;
 }
 
-/* Ukuran Gambar Vertikal Simetris Ramping */
+/* Gambar Kartu */
 div[data-testid="stImage"] img {
     height: 90px !important;
     width: 100% !important;
@@ -124,8 +119,7 @@ div[data-testid="stCaptionContainer"] {
     margin-top: 2px !important;
 }
 
-/* --- TOMBOL PILIHAN DENGAN AKSEN NEON BERBEDA --- */
-/* 1. Neon Biru Cyan (Modul Ajar) */
+/* Tombol Kartu Neon */
 .btn-cyan > button {
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -134,17 +128,9 @@ div[data-testid="stCaptionContainer"] {
     border: 1px solid #00f2fe !important;
     color: #00f2fe !important;
     box-shadow: 0 0 8px rgba(0, 242, 254, 0.3) !important;
-    transition: all 0.2s ease-in-out !important;
-    margin-top: 3px !important;
-    padding: 4px 6px !important;
-}
-.btn-cyan > button:hover {
-    background: #00f2fe !important;
-    color: #000000 !important;
-    box-shadow: 0 0 18px rgba(0, 242, 254, 0.8) !important;
+    width: 100% !important;
 }
 
-/* 2. Neon Hijau Zamrud (Catatan Rapor) */
 .btn-emerald > button {
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -153,17 +139,9 @@ div[data-testid="stCaptionContainer"] {
     border: 1px solid #10b981 !important;
     color: #10b981 !important;
     box-shadow: 0 0 8px rgba(16, 185, 129, 0.3) !important;
-    transition: all 0.2s ease-in-out !important;
-    margin-top: 3px !important;
-    padding: 4px 6px !important;
-}
-.btn-emerald > button:hover {
-    background: #10b981 !important;
-    color: #000000 !important;
-    box-shadow: 0 0 18px rgba(16, 185, 129, 0.8) !important;
+    width: 100% !important;
 }
 
-/* 3. Neon Ungu Violet (Regulasi & SK) */
 .btn-purple > button {
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -172,17 +150,9 @@ div[data-testid="stCaptionContainer"] {
     border: 1px solid #a855f7 !important;
     color: #c084fc !important;
     box-shadow: 0 0 8px rgba(168, 85, 247, 0.3) !important;
-    transition: all 0.2s ease-in-out !important;
-    margin-top: 3px !important;
-    padding: 4px 6px !important;
-}
-.btn-purple > button:hover {
-    background: #a855f7 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 18px rgba(168, 85, 247, 0.8) !important;
+    width: 100% !important;
 }
 
-/* 4. Neon Merah Muda Pink (Kesiswaan) */
 .btn-pink > button {
     font-size: 0.78rem !important;
     font-weight: 700 !important;
@@ -191,17 +161,10 @@ div[data-testid="stCaptionContainer"] {
     border: 1px solid #ec4899 !important;
     color: #f472b6 !important;
     box-shadow: 0 0 8px rgba(236, 72, 153, 0.3) !important;
-    transition: all 0.2s ease-in-out !important;
-    margin-top: 3px !important;
-    padding: 4px 6px !important;
-}
-.btn-pink > button:hover {
-    background: #ec4899 !important;
-    color: #ffffff !important;
-    box-shadow: 0 0 18px rgba(236, 72, 153, 0.8) !important;
+    width: 100% !important;
 }
 
-/* Tombol Eksekusi Utama Tengah */
+/* Tombol Utama */
 .main-btn > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -210,12 +173,28 @@ div[data-testid="stCaptionContainer"] {
     color: white !important;
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
-    transition: all 0.3s ease-in-out !important;
     margin-top: 4px;
 }
-.main-btn > button:hover {
-    box-shadow: 0 0 24px rgba(255, 123, 0, 0.8) !important;
-    transform: translateY(-1px);
+
+/* Penyesuaian Khusus Layar Tablet & HP (< 768px) */
+@media (max-width: 768px) {
+    .title-sekolah, .title-kita, .title-ai {
+        font-size: 1.5rem !important;
+    }
+    .hero-icon {
+        font-size: 1.5rem !important;
+    }
+    div[data-testid="stImage"] img {
+        height: 75px !important;
+    }
+    .main-btn > button, .side-btn > button {
+        min-height: 44px !important;
+        font-size: 0.85rem !important;
+    }
+    div[data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 8px !important;
+        margin-bottom: 8px !important;
+    }
 }
 </style>
 """
@@ -265,12 +244,11 @@ Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidi
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
 
-# 5. Tata Letak 3 Kolom Simetris (Rasio 0.9 : 2.0 : 0.9)
-col_left, col_center, col_right = st.columns([0.9, 2.0, 0.9], gap="small")
+# 5. Tata Letak 3 Kolom Responsif (Di HP otomatis menjadi tumpukan vertikal yang rapi)
+col_left, col_center, col_right = st.columns([1, 2.2, 1], gap="small")
 
-# --- SISI KIRI (2 KARTU VERTIKAL) ---
+# --- SISI KIRI ---
 with col_left:
-    # Kartu 1: Modul Ajar
     with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=400&q=80", caption="Instruksional & Modul", use_container_width=True)
         st.markdown('<div class="btn-cyan">', unsafe_allow_html=True)
@@ -281,7 +259,6 @@ with col_left:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Kartu 2: Catatan Rapor
     with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=400&q=80", caption="Asesmen & Rapor", use_container_width=True)
         st.markdown('<div class="btn-emerald">', unsafe_allow_html=True)
@@ -292,7 +269,7 @@ with col_left:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SISI TENGAH (STUDIO RANCANGAN) ---
+# --- SISI TENGAH: STUDIO RANCANGAN ---
 roles_list = [
     "Guru Mata Pelajaran",
     "Wali Kelas",
@@ -320,15 +297,14 @@ with col_center:
             "Detail Tambahan / Konteks:",
             value=st.session_state.selected_details,
             placeholder="Kriteria siswa, topik materi, target jam tatap muka (JTM), atau petunjuk tata letak Canva...",
-            height=140
+            height=130
         )
         st.markdown('<div class="main-btn">', unsafe_allow_html=True)
         btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SISI KANAN (2 KARTU VERTIKAL) ---
+# --- SISI KANAN ---
 with col_right:
-    # Kartu 3: Regulasi & SK
     with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1450133064473-71024230f91b?w=400&q=80", caption="Regulasi & SK Dinas", use_container_width=True)
         st.markdown('<div class="btn-purple">', unsafe_allow_html=True)
@@ -339,7 +315,6 @@ with col_right:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # Kartu 4: Kesiswaan & Tata Tertib
     with st.container(border=True):
         st.image("https://images.unsplash.com/photo-1577896851231-70ef18881754?w=400&q=80", caption="Kesiswaan & Disiplin", use_container_width=True)
         st.markdown('<div class="btn-pink">', unsafe_allow_html=True)
@@ -350,7 +325,7 @@ with col_right:
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-# --- BAGIAN BAWAH: STUDIO KREASI & VISUAL ---
+# --- STUDIO KREASI & VISUAL ---
 st.write("")
 st.markdown('<div class="canvas-heading">🎨 STUDIO KREASI & VISUAL</div>', unsafe_allow_html=True)
 canvas_box = st.container(border=True)
