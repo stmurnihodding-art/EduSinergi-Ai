@@ -9,7 +9,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# 2. Styling CSS Neon Bar & Layout Dashboard
+# 2. Styling CSS Neon Bar, Layout Dashboard & Kartu Gambar
 custom_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Orbitron:wght@700;800;900&display=swap');
@@ -57,7 +57,7 @@ html, body, [class*="css"] {
     text-shadow: 0 0 14px rgba(0, 242, 254, 0.7);
 }
 
-/* Garis Neon Bar Menyala Dua Warna */
+/* Garis Neon Bar */
 .neon-glow-bar {
     height: 4px;
     width: 100%;
@@ -65,10 +65,10 @@ html, body, [class*="css"] {
     border-radius: 4px;
     box-shadow: 0 0 12px rgba(0, 242, 254, 0.6), 0 0 22px rgba(255, 123, 0, 0.5);
     margin-top: 6px;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
-/* Border Dinamis Sesuai Konten (Tidak Kosong/Terpotong) */
+/* Border Dinamis */
 div[data-testid="stVerticalBlockBorderWrapper"] {
     border-radius: 12px !important;
     border: 1px solid rgba(0, 242, 254, 0.35) !important;
@@ -77,7 +77,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     padding: 18px !important;
 }
 
-/* Tombol Eksekusi Bergradasi Oranye */
+/* Tombol Eksekusi Bergradasi */
 .stButton > button {
     font-family: 'Plus Jakarta Sans', sans-serif !important;
     font-weight: 700 !important;
@@ -87,7 +87,7 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
     border: none !important;
     box-shadow: 0 0 14px rgba(255, 123, 0, 0.45) !important;
     transition: all 0.3s ease-in-out !important;
-    margin-top: 10px;
+    margin-top: 6px;
 }
 
 .stButton > button:hover {
@@ -114,6 +114,54 @@ st.markdown(
 st.caption("Platform Tata Kelola Sekolah, Modul Ajar, dan Administrasi Terintegrasi")
 st.markdown('<div class="neon-glow-bar"></div>', unsafe_allow_html=True)
 
+# Inisialisasi State Formulir
+if "selected_role" not in st.session_state:
+    st.session_state.selected_role = "Wali Kelas"
+if "selected_doc" not in st.session_state:
+    st.session_state.selected_doc = ""
+if "selected_details" not in st.session_state:
+    st.session_state.selected_details = ""
+if "generated_doc" not in st.session_state:
+    st.session_state.generated_doc = ""
+
+# --- FOLDER GAMBAR / KARTU PINTAS PEMBUKA ---
+with st.expander("📁 **Galeri Templat Cepat (Klik Gambar untuk Membuka Dokumen)**", expanded=True):
+    col_k1, col_k2, col_k3, col_k4 = st.columns(4)
+
+    with col_k1:
+        st.image("https://images.unsplash.com/photo-1509062522246-3755977927d7?w=400&q=80", caption="Modul Ajar & RPP", use_container_width=True)
+        if st.button("Pilih Modul Ajar", key="btn_tpl_1", use_container_width=True):
+            st.session_state.selected_role = "Guru Mata Pelajaran"
+            st.session_state.selected_doc = "Modul Ajar Kurikulum Merdeka"
+            st.session_state.selected_details = "Mata pelajaran Sosiologi kelas X, topik Interaksi Sosial dan Dinamika Kelompok, lengkap dengan LKPD dan konsep infografik Canva."
+            st.rerun()
+
+    with col_k2:
+        st.image("https://images.unsplash.com/photo-1434030216411-0b793f4b4173?w=400&q=80", caption="Catatan Rapor", use_container_width=True)
+        if st.button("Pilih Catatan Rapor", key="btn_tpl_2", use_container_width=True):
+            st.session_state.selected_role = "Wali Kelas"
+            st.session_state.selected_doc = "Catatan Wali Kelas untuk Rapor Semester 1"
+            st.session_state.selected_details = "Kategori siswa berprestasi, aktif ekstrakurikuler, butuh motivasi belajar, dan kedisiplinan absensi berlandaskan Profil Pelajar Pancasila."
+            st.rerun()
+
+    with col_k3:
+        st.image("https://images.unsplash.com/photo-1455390582262-044cdead277a?w=400&q=80", caption="Tata Naskah & SK", use_container_width=True)
+        if st.button("Pilih Naskah Dinas", key="btn_tpl_3", use_container_width=True):
+            st.session_state.selected_role = "Kepala Sekolah"
+            st.session_state.selected_doc = "Surat Keputusan (SK) Tim Kerja Sekolah"
+            st.session_state.selected_details = "SK Penetapan Tim Pelaksana Projek Penguatan Profil Pelajar Pancasila (P5) Tahun Ajaran 2026/2027 lengkap dengan konsideran menimbang dan mengingat."
+            st.rerun()
+
+    with col_k4:
+        st.image("https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&q=80", caption="Kesiswaan & Ekstra", use_container_width=True)
+        if st.button("Pilih Kesiswaan", key="btn_tpl_4", use_container_width=True):
+            st.session_state.selected_role = "Tim Kesiswaan"
+            st.session_state.selected_doc = "Program Kerja Kesiswaan & Tata Tertib"
+            st.session_state.selected_details = "Regulasi poin pelanggaran dan penghargaan prestasi siswa, serta jadwal kegiatan Masa Pengenalan Lingkungan Sekolah (MPLS)."
+            st.rerun()
+
+st.write("")
+
 # 4. Panel Samping (Sidebar)
 with st.sidebar:
     st.header("⚙️ Pengaturan")
@@ -132,32 +180,35 @@ Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidi
 Sajikan langsung format dokumen siap pakai tanpa basa-basi pembuka.
 """
 
-if "generated_doc" not in st.session_state:
-    st.session_state.generated_doc = ""
-
 # 5. Tata Letak Dashboard Layar Laptop (Rasio 1 : 1.4)
 col_input, col_canvas = st.columns([1, 1.4], gap="large")
+
+roles_list = [
+    "Wali Kelas",
+    "Guru Mata Pelajaran",
+    "Kepala Sekolah",
+    "Tim Kurikulum",
+    "Tim Kesiswaan",
+    "Tata Usaha (TU)"
+]
+current_role_index = roles_list.index(st.session_state.selected_role) if st.session_state.selected_role in roles_list else 0
 
 with col_input:
     st.markdown("### 🎛️ Studio Rancangan")
     with st.container(border=True):
         role = st.selectbox(
             "Pilih Peran Anda:",
-            [
-                "Wali Kelas",
-                "Guru Mata Pelajaran",
-                "Kepala Sekolah",
-                "Tim Kurikulum",
-                "Tim Kesiswaan",
-                "Tata Usaha (TU)"
-            ]
+            roles_list,
+            index=current_role_index
         )
         doc_type = st.text_input(
             "Jenis Dokumen / Administrasi:",
+            value=st.session_state.selected_doc,
             placeholder="Contoh: Modul Ajar, Catatan Rapor"
         )
         details = st.text_area(
             "Detail Tambahan / Konteks:",
+            value=st.session_state.selected_details,
             placeholder="Kriteria siswa, topik materi, atau instruksi tata letak visual...",
             height=180
         )
@@ -179,7 +230,6 @@ if btn_generate:
                 client = genai.Client(api_key=api_key)
                 prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
                 
-                # Streaming respon agar teks langsung mengalir seketika
                 response_stream = client.models.generate_content_stream(
                     model="gemini-3.6-flash",
                     contents=prompt_input,
@@ -198,7 +248,7 @@ if btn_generate:
             except Exception as e:
                 st.error(f"Terjadi kesalahan: {e}")
 
-# Tampilan Kanvas Setelah Selesai Dirakit
+# Tampilan Kanvas Setelah Selesai
 with canvas_box:
     if st.session_state.generated_doc:
         tab_view, tab_copy = st.tabs(["👁️ Tampilan Dokumen", "📋 Format Salin ke Canva"])
