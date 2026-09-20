@@ -1,6 +1,7 @@
 import streamlit as st
 from google import genai
 from google.genai import types
+import io
 
 # 1. Konfigurasi Halaman Dashboard Responsif
 st.set_page_config(
@@ -177,7 +178,6 @@ div[data-testid="stCaptionContainer"] {
     margin-top: 4px;
 }
 
-/* Penyesuaian Khusus Layar Tablet & HP (< 768px) */
 @media (max-width: 768px) {
     .title-sekolah, .title-kita, .title-ai {
         font-size: 1.5rem !important;
@@ -228,6 +228,10 @@ if "generated_doc" not in st.session_state:
     st.session_state.generated_doc = ""
 if "generated_image" not in st.session_state:
     st.session_state.generated_image = None
+if "uploaded_preview_img" not in st.session_state:
+    st.session_state.uploaded_preview_img = None
+if "uploaded_preview_doc" not in st.session_state:
+    st.session_state.uploaded_preview_doc = ""
 
 # 4. Panel Samping (Sidebar)
 with st.sidebar:
@@ -242,8 +246,11 @@ with st.sidebar:
 
 SYSTEM_INSTRUCTION = """
 Anda adalah "SEKOLAHKITA AI", asisten komprehensif tata kelola sekolah, perancangan beban mengajar guru (JTM), kurikulum instruksional (SD, SMP, SMA/SMK), tata naskah dinas, dan perancang tata letak visual untuk Canva.
-Khusus untuk peran Guru Kelas (SD): kuasai pendekatan tematik, fase fondasi A-C Kurikulum Merdeka, literasi-numerasi dini, serta lembar kerja aktivitas peserta didik (LKPD) yang ramah anak.
-Jika dokumen berkaitan dengan infografik, poster, LKPD, atau slide presentasi: berikan instruksi konsep layout, kode skema warna hex, teks terstruktur, serta tautkan panduan ke platform Canva.
+Kemampuan Multi-Format Dokumen & Gambar:
+- Jika pengguna mengunggah teks dokumen (PDF, DOCX, TXT), baca dan tindaklanjuti isinya sesuai permintaan guru.
+- Jika pengguna mengunggah gambar (JPG, JPEG, PNG, WEBP) berisi naskah dinas, lembar modul ajar, foto papan tulis, atau lembar tugas siswa, lakukan Optical Character Recognition (OCR) dan tindaklanjuti secara kontekstual.
+- Khusus untuk peran Guru Kelas (SD): kuasai pendekatan tematik, fase fondasi A-C Kurikulum Merdeka, literasi-numerasi dini, serta lembar aktivitas peserta didik (LKPD) ramah anak.
+- Jika dokumen berkaitan dengan infografik, poster, LKPD, atau slide presentasi: sertakan konsep tata letak terstruktur, kode skema warna hex, dan panduan transfer ke Canva.
 Gunakan bahasa Indonesia baku, formal, dan rapi sesuai tata naskah dinas pendidikan.
 Sajikan langsung format dokumen atau matriks tabel siap pakai tanpa basa-basi pembuka.
 """
@@ -299,11 +306,19 @@ with col_center:
             placeholder="Contoh: Modul Ajar Tematik, Catatan Rapor, SK Pembagian Tugas"
         )
         details = st.text_area(
-            "Detail Tambahan / Konteks:",
+            "Detail Tambahan / Instruksi Tindak Lanjut:",
             value=st.session_state.selected_details,
-            placeholder="Ketik detail materi... (Jika ingin gambar asli, tambahkan instruksi 'buatkan gambar visual')",
-            height=130
+            placeholder="Ketik instruksi tindak lanjut (misal: 'analisis foto SK ini', 'buatkan LKPD berdasarkan foto buku ini', atau 'buatkan gambar visual')...",
+            height=110
         )
+        
+        # Fitur Unggah Pembaca Berkas Multi-Format (DOCX, PDF, TXT, JPG, PNG, WEBP)
+        uploaded_file = st.file_uploader(
+            "📎 Unggah Dokumen / Foto Berkas untuk Dibaca AI:",
+            type=["docx", "pdf", "txt", "jpg", "jpeg", "png", "webp"],
+            help="Unggah berkas Word (.docx), PDF, teks (.txt), atau foto dokumen (.jpg/.png) untuk dianalisis dan ditindaklanjuti secara otomatis."
+        )
+
         st.markdown('<div class="main-btn">', unsafe_allow_html=True)
         btn_generate = st.button("🚀 Susun ke Kanvas", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -335,44 +350,88 @@ st.write("")
 st.markdown('<div class="canvas-heading">🎨 STUDIO KREASI & VISUAL</div>', unsafe_allow_html=True)
 canvas_box = st.container(border=True)
 
-# Logika Pembuatan Dokumen / Visualisasi Gambar
+# Logika Pemrosesan Berkas Dokumen & Gambar
 if btn_generate:
     if not api_key:
         st.error("Silakan masukkan Gemini API Key di menu samping terlebih dahulu.")
-    elif not doc_type:
-        st.warning("Mohon sebutkan jenis dokumen yang ingin dibuat.")
+    elif not doc_type and not uploaded_file:
+        st.warning("Mohon sebutkan jenis dokumen atau unggah berkas yang ingin diproses.")
     else:
-        with st.spinner("Sedang meracik ke studio visual..."):
-            try:
-                client = genai.Client(api_key=api_key)
-                combined_input = f"{doc_type} {details}".lower()
-                
-                # Cek apakah ada permintaan gambar nyata secara eksplisit
-                keywords_image = ["buatkan gambar", "hasilkan gambar", "generate image", "ilustrasi gambar", "buat gambar"]
-                need_real_image = any(kw in combined_input for kw in keywords_image)
+        try:
+            client = genai.Client(api_key=api_key)
+            combined_input = f"{doc_type} {details}".lower()
+            keywords_image = ["buatkan gambar", "hasilkan gambar", "generate image", "ilustrasi gambar", "buat gambar"]
+            need_real_image = any(kw in combined_input for kw in keywords_image)
 
-                # 1. Hasilkan Naskah & Panduan Desain Layout Canva
-                prompt_input = f"Peran: {role}\nJenis Dokumen: {doc_type}\nKonteks/Detail: {details}"
-                response_stream = client.models.generate_content_stream(
-                    model="gemini-3.6-flash",
-                    contents=prompt_input,
-                    config={"system_instruction": SYSTEM_INSTRUCTION}
-                )
-                
-                full_text = ""
-                with canvas_box:
-                    stream_placeholder = st.empty()
-                    for chunk in response_stream:
-                        full_text += chunk.text
-                        stream_placeholder.markdown(full_text)
-                
-                st.session_state.generated_doc = full_text
+            st.session_state.generated_image = None
+            st.session_state.uploaded_preview_img = None
+            st.session_state.uploaded_preview_doc = ""
 
-                # 2. Jika ada permintaan gambar spesifik, panggil model Image Generation
-                if need_real_image:
+            target_doc_title = doc_type if doc_type else "Analisis dan Tindak Lanjut Berkas Sumber"
+            text_prompt = f"Peran Pengguna: {role}\nJenis Dokumen/Target: {target_doc_title}\nInstruksi Tambahan: {details}\n\nLakukan analisis menyeluruh dan tindak lanjuti dokumen/materi ini secara terstruktur:"
+            
+            contents_payload = [text_prompt]
+
+            # Penanganan Berkas Unggahan Multi-Format
+            if uploaded_file is not None:
+                file_bytes = uploaded_file.getvalue()
+                file_name = uploaded_file.name.lower()
+
+                # Kasus 1: Berkas Gambar (JPG, PNG, WEBP)
+                if file_name.endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                    st.session_state.uploaded_preview_img = file_bytes
+                    mime = uploaded_file.type if uploaded_file.type else "image/jpeg"
+                    contents_payload.append(types.Part.from_bytes(data=file_bytes, mime_type=mime))
+
+                # Kasus 2: Berkas Teks (.txt)
+                elif file_name.endswith('.txt'):
+                    txt_content = file_bytes.decode('utf-8', errors='ignore')
+                    st.session_state.uploaded_preview_doc = txt_content[:2000]
+                    contents_payload.append(f"\n--- ISI DOKUMEN TEKS ({uploaded_file.name}) ---\n{txt_content}")
+
+                # Kasus 3: Berkas Word (.docx)
+                elif file_name.endswith('.docx'):
+                    try:
+                        import docx
+                        doc = docx.Document(io.BytesIO(file_bytes))
+                        docx_text = "\n".join([p.text for p in doc.paragraphs if p.text])
+                    except Exception:
+                        docx_text = file_bytes.decode('latin-1', errors='ignore')
+                    st.session_state.uploaded_preview_doc = docx_text[:2000]
+                    contents_payload.append(f"\n--- ISI DOKUMEN WORD ({uploaded_file.name}) ---\n{docx_text}")
+
+                # Kasus 4: Berkas PDF (.pdf)
+                elif file_name.endswith('.pdf'):
+                    try:
+                        import pypdf
+                        reader = pypdf.PdfReader(io.BytesIO(file_bytes))
+                        pdf_text = "\n".join([page.extract_text() or "" for page in reader.pages])
+                    except Exception:
+                        pdf_text = file_bytes.decode('latin-1', errors='ignore')
+                    st.session_state.uploaded_preview_doc = pdf_text[:2000]
+                    contents_payload.append(f"\n--- ISI DOKUMEN PDF ({uploaded_file.name}) ---\n{pdf_text}")
+
+            # Alirkan hasil analisis dokumen & naskah secara streaming
+            response_stream = client.models.generate_content_stream(
+                model="gemini-2.5-flash",
+                contents=contents_payload,
+                config={"system_instruction": SYSTEM_INSTRUCTION}
+            )
+            
+            full_text = ""
+            with canvas_box:
+                stream_placeholder = st.empty()
+                for chunk in response_stream:
+                    full_text += chunk.text
+                    stream_placeholder.markdown(full_text)
+            st.session_state.generated_doc = full_text
+
+            # Jika ada instruksi khusus merender ilustrasi gambar nyata
+            if need_real_image:
+                with st.spinner("Sedang merender ilustrasi visual..."):
                     img_response = client.models.generate_images(
                         model='imagen-3.0-generate-002',
-                        prompt=f"Educational illustration for school, classroom context: {doc_type}, {details}",
+                        prompt=f"Educational illustration for school, classroom context: {target_doc_title}, {details}",
                         config=types.GenerateImagesConfig(
                             number_of_images=1,
                             aspect_ratio="16:9"
@@ -380,15 +439,22 @@ if btn_generate:
                     )
                     for generated_image in img_response.generated_images:
                         st.session_state.generated_image = generated_image.image.image_bytes
-                else:
-                    st.session_state.generated_image = None
 
-                st.rerun()
-            except Exception as e:
-                st.error(f"Terjadi kesalahan: {e}")
+        except Exception as e:
+            st.error(f"Terjadi kesalahan saat memproses: {e}")
 
 # Tampilan Hasil di Studio Kreasi & Visual
 with canvas_box:
+    # Tampilkan pratinjau sumber berkas
+    if st.session_state.uploaded_preview_img:
+        with st.expander("📷 **Lihat Foto/Dokumen Asli yang Dibaca AI**", expanded=False):
+            st.image(st.session_state.uploaded_preview_img, caption="Dokumen Visual yang Diunggah", use_container_width=True)
+
+    if st.session_state.uploaded_preview_doc:
+        with st.expander("📄 **Lihat Kutipan Dokumen Teks/PDF/Word yang Dibaca AI**", expanded=False):
+            st.text_area("Isi Teks Dokumen:", value=st.session_state.uploaded_preview_doc, height=120, disabled=True)
+
+    # Tampilkan ilustrasi gambar hasil Imagen jika ada
     if st.session_state.generated_image:
         st.markdown("##### 🖼️ Hasil Gambar Ilustrasi Sesuai Permintaan:")
         st.image(st.session_state.generated_image, use_container_width=True)
@@ -400,6 +466,7 @@ with canvas_box:
         )
         st.divider()
 
+    # Tampilkan tab hasil dokumen & naskah
     if st.session_state.generated_doc:
         tab_view, tab_copy, tab_canva = st.tabs(["👁️ Tampilan Naskah & Rancangan", "📋 Salin Format Naskah", "🎨 Panduan Buka di Canva"])
         
