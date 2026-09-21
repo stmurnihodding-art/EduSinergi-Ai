@@ -675,7 +675,41 @@ if btn_generate:
                 st.session_state.generated_doc = response_text
             else:
                 st.error("Layanan AI sedang sibuk sementara. Silakan klik kembali tombol 'Hasilkan Rancangan (Generate)'.")
+# Upgrade Mesin: Mengaktifkan Efek Streaming & Reasoning seperti Gemini Bawaan Asli
+            candidate_models = ["gemini-3.6-flash", "gemini-2.5-pro", "gemini-2.5-flash"]
+            full_text = ""
+            
+            with canvas_box:
+                st.markdown("##### ⚡ JacS AI sedang merancang...")
+                teks_placeholder = st.empty()
 
+                for model_name in candidate_models:
+                    try:
+                        # Panggilan stream kata demi kata persis Gemini asli
+                        response_stream = client.models.generate_content_stream(
+                            model=model_name,
+                            contents=contents_payload,
+                            config=types.GenerateContentConfig(
+                                system_instruction=SYSTEM_INSTRUCTION,
+                                temperature=0.7
+                            )
+                        )
+                        for chunk in response_stream:
+                            if chunk.text:
+                                full_text += chunk.text
+                                teks_placeholder.markdown(full_text + "▌")  # Kursor ketik khas Gemini
+                        teks_placeholder.markdown(full_text)
+                        break
+                    except Exception as err:
+                        if "503" in str(err):
+                            time.sleep(1)
+                            continue
+                        else:
+                            raise err
+            if full_text:
+                st.session_state.generated_doc = full_text
+            else:
+                st.error("Layanan sedang padat. Silakan klik kembali '⚡ Hasilkan Rancangan (Generate)'.")
             # Pembuatan Gambar Ilustrasi jika Diminta
             if need_real_image and response_text:
                 with st.spinner("Sedang merender ilustrasi visual..."):
